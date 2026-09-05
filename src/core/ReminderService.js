@@ -14,6 +14,9 @@ class ReminderService {
     this.queue = [];
     this.processing = false;
     this.activeReminders = new Map();
+    this.shownReminders = new Set();
+    this.onShow = null;
+    this.onDismiss = null;
   }
 
   async start() {
@@ -81,6 +84,9 @@ class ReminderService {
       await this.audioPlayer.play(wakeUpSound);
     }
 
+    this.shownReminders.add(reminder.id);
+    if (this.onShow) this.onShow(this.getShownReminders());
+
     this.reminderWindow.showReminder(reminder, this.queue.length);
 
     this.processing = false;
@@ -91,17 +97,22 @@ class ReminderService {
     const reminder = this.config.reminders.find((r) => r.id === reminderId);
     if (!reminder) return;
 
+    this.shownReminders.delete(reminderId);
+    if (this.onDismiss) this.onDismiss(this.getShownReminders());
+
     if (action === REMINDER_ACTIONS.DONE) {
       const doneSound = this.audioPlayer.pickRandom(reminder.id, 'done');
       if (doneSound) {
         await this.audioPlayer.play(doneSound);
       }
+      this.reminderWindow.hide();
     } else if (action === REMINDER_ACTIONS.SNOOZE) {
       const snoozeSound = this.audioPlayer.pickRandom(reminder.id, 'snooze');
       if (snoozeSound) {
         await this.audioPlayer.play(snoozeSound);
       }
 
+      this.reminderWindow.hide();
       this.#scheduleTimeout(reminder, this.config.snoozeInterval);
     }
   }
@@ -111,6 +122,12 @@ class ReminderService {
       id: r.id,
       title: r.title,
     }));
+  }
+
+  getShownReminders() {
+    return this.config.reminders
+      .filter((r) => this.shownReminders.has(r.id))
+      .map((r) => ({ id: r.id, title: r.title }));
   }
 }
 

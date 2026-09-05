@@ -36,7 +36,7 @@ const ReminderWindow = require('../../src/ui/ReminderWindow');
 describe('ReminderWindow', () => {
   let window;
   const config = {
-    window: { width: 320, height: 220 },
+    window: { width: 320, height: 220, defaultColor: '#1a1a2e' },
   };
 
   beforeEach(() => {
@@ -93,6 +93,7 @@ describe('ReminderWindow', () => {
         id: 'test',
         title: 'Test',
         description: 'Desc',
+        color: '#1a1a2e',
         stackIndex: 0,
       });
     });
@@ -103,6 +104,24 @@ describe('ReminderWindow', () => {
       expect(window.window.webContents.send).toHaveBeenCalledWith(
         'show-reminder',
         expect.objectContaining({ description: '' })
+      );
+    });
+
+    it('uses reminder color when provided', () => {
+      window.showReminder({ id: 'test', title: 'Test', color: '#ff0000' }, 0);
+
+      expect(window.window.webContents.send).toHaveBeenCalledWith(
+        'show-reminder',
+        expect.objectContaining({ color: '#ff0000' })
+      );
+    });
+
+    it('falls back to defaultColor when reminder has no color', () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+
+      expect(window.window.webContents.send).toHaveBeenCalledWith(
+        'show-reminder',
+        expect.objectContaining({ color: '#1a1a2e' })
       );
     });
   });
@@ -160,6 +179,19 @@ describe('ReminderWindow', () => {
 
       expect(event.preventDefault).toHaveBeenCalled();
       expect(window.window.hide).toHaveBeenCalled();
+    });
+
+    it('close handler allows close when quitting', () => {
+      window.createWindow();
+      window.quitting = true;
+
+      const closeHandler = window.window.on.mock.calls.find(
+        (call) => call[0] === 'close'
+      )[1];
+      const event = { preventDefault: jest.fn() };
+      closeHandler(event);
+
+      expect(event.preventDefault).not.toHaveBeenCalled();
     });
   });
 

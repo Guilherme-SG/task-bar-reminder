@@ -41,14 +41,16 @@ Edit `config.json` in the project root:
   "snoozeInterval": 300000,
   "window": {
     "width": 320,
-    "height": 220
+    "height": 220,
+    "defaultColor": "#1a1a2e"
   },
   "reminders": [
     {
       "id": "drink-water",
       "title": "Hora de beber água",
       "description": "Meia garrafa/350ml recomendados",
-      "cron": "*/40 * * * *"
+      "cron": "*/40 * * * *",
+      "color": "#1e3a5f"
     }
   ]
 }
@@ -65,6 +67,7 @@ Edit `config.json` in the project root:
 | `snoozeInterval` | number | `300000` | Ms before retrying after snooze (5 min). |
 | `window.width` | number | `320` | Popup window width. |
 | `window.height` | number | `220` | Popup window height. |
+| `window.defaultColor` | string | `"#1a1a2e"` | Default card color (hex). Used when reminder has no `color`. |
 | `reminders` | array | - | List of reminders (required). |
 
 ### Reminder Object
@@ -75,6 +78,7 @@ Edit `config.json` in the project root:
 | `title` | string | Yes | Displayed in the popup header. |
 | `description` | string | No | Displayed below the title. |
 | `cron` | string | Yes | Cron expression for scheduling. |
+| `color` | string | No | Card color as hex (e.g., `"#1e3a5f"`). Uses `window.defaultColor` if not set. |
 
 ## Cron Expressions
 

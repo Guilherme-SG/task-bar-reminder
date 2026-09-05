@@ -15,13 +15,11 @@ class AudioPlayer {
       this.stop();
 
       if (!this.ffplayPath || !fs.existsSync(this.ffplayPath)) {
-        console.warn(`ffplay not found at: ${this.ffplayPath}`);
         resolve();
         return;
       }
 
       if (!fs.existsSync(audioPath)) {
-        console.warn(`Audio file not found: ${audioPath}`);
         resolve();
         return;
       }
@@ -36,8 +34,7 @@ class AudioPlayer {
         stdio: 'ignore',
       });
 
-      this.currentProcess.on('error', (err) => {
-        console.error('Audio playback error:', err.message);
+      this.currentProcess.on('error', () => {
         this.currentProcess = null;
         resolve();
       });

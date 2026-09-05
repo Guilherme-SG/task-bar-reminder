@@ -18,6 +18,7 @@ describe('ReminderService', () => {
 
     mockReminderWindow = {
       showReminder: jest.fn(),
+      hide: jest.fn(),
     };
 
     mockStateStore = {
@@ -93,6 +94,14 @@ describe('ReminderService', () => {
       expect(mockAudioPlayer.play).toHaveBeenCalledWith('/sounds/water-done-1.mp3');
     });
 
+    it('hides window on done', async () => {
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.resolveReminder('water', 'done');
+
+      expect(mockReminderWindow.hide).toHaveBeenCalled();
+    });
+
     it('skips done sound when pickRandom returns null', async () => {
       mockAudioPlayer.pickRandom.mockReturnValue(null);
 
@@ -126,6 +135,14 @@ describe('ReminderService', () => {
       expect(service.activeReminders.has('timeout_water')).toBe(true);
     });
 
+    it('hides window on snooze', async () => {
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.resolveReminder('water', 'snooze');
+
+      expect(mockReminderWindow.hide).toHaveBeenCalled();
+    });
+
     it('does nothing for unknown reminder id', async () => {
       await service.resolveReminder('nonexistent', 'done');
 
@@ -147,6 +164,81 @@ describe('ReminderService', () => {
         { id: 'water', title: 'Drink Water' },
         { id: 'break', title: 'Take Break' },
       ]);
+    });
+  });
+
+  describe('getShownReminders', () => {
+    it('returns empty array when no reminders are shown', () => {
+      expect(service.getShownReminders()).toEqual([]);
+    });
+
+    it('returns shown reminders after firing', async () => {
+      mockStateStore.getNextFireTime
+        .mockResolvedValueOnce('2020-01-01T00:00:00Z')
+        .mockResolvedValueOnce(null);
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+
+      expect(service.getShownReminders()).toEqual([
+        { id: 'water', title: 'Drink Water' },
+      ]);
+    });
+
+    it('removes reminder from shown after resolve', async () => {
+      mockStateStore.getNextFireTime
+        .mockResolvedValueOnce('2020-01-01T00:00:00Z')
+        .mockResolvedValueOnce(null);
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+      expect(service.getShownReminders()).toHaveLength(1);
+
+      await service.resolveReminder('water', 'done');
+      expect(service.getShownReminders()).toHaveLength(0);
+    });
+  });
+
+  describe('onShow and onDismiss callbacks', () => {
+    it('calls onShow when reminder fires', async () => {
+      const onShow = jest.fn();
+      service.onShow = onShow;
+
+      mockStateStore.getNextFireTime.mockResolvedValue('2020-01-01T00:00:00Z');
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+
+      expect(onShow).toHaveBeenCalledWith([
+        { id: 'water', title: 'Drink Water' },
+      ]);
+    });
+
+    it('calls onDismiss when reminder is resolved', async () => {
+      const onDismiss = jest.fn();
+      service.onDismiss = onDismiss;
+
+      mockStateStore.getNextFireTime
+        .mockResolvedValueOnce('2020-01-01T00:00:00Z')
+        .mockResolvedValueOnce(null);
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+      await service.resolveReminder('water', 'done');
+
+      expect(onDismiss).toHaveBeenCalledWith([]);
+    });
+
+    it('does not throw when callbacks are not set', async () => {
+      mockStateStore.getNextFireTime.mockResolvedValue('2020-01-01T00:00:00Z');
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await expect(service.start()).resolves.not.toThrow();
     });
   });
 

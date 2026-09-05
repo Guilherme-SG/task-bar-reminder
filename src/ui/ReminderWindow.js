@@ -5,6 +5,7 @@ class ReminderWindow {
   constructor(config) {
     this.config = config;
     this.window = null;
+    this.quitting = false;
 
     ipcMain.removeAllListeners('reminder-action');
     ipcMain.on('reminder-action', (_, reminderId, action) => {
@@ -32,6 +33,7 @@ class ReminderWindow {
       id: reminder.id,
       title: reminder.title,
       description: reminder.description || '',
+      color: reminder.color || this.config.window.defaultColor,
       stackIndex,
     };
 
@@ -74,6 +76,7 @@ class ReminderWindow {
     });
 
     this.window.on('close', (event) => {
+      if (this.quitting) return;
       event.preventDefault();
       this.window.hide();
     });

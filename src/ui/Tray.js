@@ -5,6 +5,7 @@ class AppTray {
   constructor() {
     this.tray = null;
     this.onAction = null;
+    this.onQuit = null;
   }
 
   create() {
@@ -13,22 +14,36 @@ class AppTray {
     );
 
     this.tray.setToolTip('Desktop Reminder');
-    this.updateMenu([]);
+    this.updateMenu([], []);
   }
 
   setOnAction(callback) {
     this.onAction = callback;
   }
 
-  updateMenu(reminders) {
-    const items = reminders.map((r) => ({
-      label: `Disparar "${r.title}" agora`,
-      click: () => {
-        if (this.onAction) {
-          this.onAction(r.id, 'fire-now');
-        }
-      },
-    }));
+  updateMenu(reminders, activeIds = []) {
+    const items = [];
+
+    for (const r of reminders) {
+      if (activeIds.includes(r.id)) {
+        items.push({
+          label: `Feito - "${r.title}"`,
+          click: () => {
+            if (this.onAction) {
+              this.onAction(r.id, 'done');
+            }
+          },
+        });
+        items.push({
+          label: `Adiar - "${r.title}"`,
+          click: () => {
+            if (this.onAction) {
+              this.onAction(r.id, 'snooze');
+            }
+          },
+        });
+      }
+    }
 
     if (items.length > 0) {
       items.push({ type: 'separator' });
@@ -36,7 +51,13 @@ class AppTray {
 
     items.push({
       label: 'Sair',
-      click: () => app.quit(),
+      click: () => {
+        if (this.onQuit) {
+          this.onQuit();
+        } else {
+          app.quit();
+        }
+      },
     });
 
     const menu = Menu.buildFromTemplate(items);

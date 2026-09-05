@@ -7,6 +7,8 @@ const ReminderService = require('./core/ReminderService.js');
 const ReminderWindow = require('./ui/ReminderWindow.js');
 const AppTray = require('./ui/Tray.js');
 
+app.commandLine.appendSwitch('disable-gpu-cache');
+
 let reminderService;
 
 app.whenReady().then(async () => {
@@ -18,7 +20,7 @@ app.whenReady().then(async () => {
       type: 'error',
       title: 'Configuration Error',
       message: 'Failed to load config.json',
-      detail: err.message,
+      detail: `${err.message}\n\nCheck README.md for the correct config format.`,
     });
     app.quit();
     return;
@@ -51,16 +53,24 @@ app.whenReady().then(async () => {
   });
 
   tray.create();
-  tray.updateMenu(config.reminders);
+  tray.updateMenu(config.reminders, []);
+
+  tray.onQuit = () => {
+    reminderWindow.quitting = true;
+    app.quit();
+  };
 
   tray.setOnAction((reminderId, action) => {
-    if (action === 'fire-now') {
-      const reminder = config.reminders.find((r) => r.id === reminderId);
-      if (reminder) {
-        reminderWindow.showReminder(reminder, 0);
-      }
-    }
+    reminderService.resolveReminder(reminderId, action);
   });
+
+  const updateTray = (shownReminders) => {
+    const activeIds = shownReminders.map((r) => r.id);
+    tray.updateMenu(config.reminders, activeIds);
+  };
+
+  reminderService.onShow = updateTray;
+  reminderService.onDismiss = updateTray;
 
   reminderService.start();
 });

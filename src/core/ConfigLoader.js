@@ -8,7 +8,7 @@ const DEFAULTS = {
   ffplayPath: '',
   autoSnoozeTimeout: 60000,
   snoozeInterval: 300000,
-  window: { width: 320, height: 220 },
+  window: { width: 320, height: 220, defaultColor: '#1a1a2e' },
 };
 
 class ConfigLoader {
@@ -73,6 +73,14 @@ class ConfigLoader {
       if (reminder.description !== undefined && typeof reminder.description !== 'string') {
         throw new Error(`Reminder "${reminder.id}" description must be a string`);
       }
+
+      if (reminder.color !== undefined && !ConfigLoader.#isValidHex(reminder.color)) {
+        throw new Error(`Reminder "${reminder.id}" has invalid color: "${reminder.color}"`);
+      }
+    }
+
+    if (config.window.defaultColor !== undefined && !ConfigLoader.#isValidHex(config.window.defaultColor)) {
+      throw new Error(`Invalid window.defaultColor: "${config.window.defaultColor}"`);
     }
 
     if (typeof config.autoSnoozeTimeout !== 'number' || config.autoSnoozeTimeout < 0) {
@@ -82,6 +90,10 @@ class ConfigLoader {
     if (typeof config.snoozeInterval !== 'number' || config.snoozeInterval < 0) {
       throw new Error('"snoozeInterval" must be a non-negative number');
     }
+  }
+
+  static #isValidHex(str) {
+    return typeof str === 'string' && /^#[0-9a-fA-F]{6}$/.test(str);
   }
 }
 

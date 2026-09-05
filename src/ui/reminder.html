@@ -31,7 +31,7 @@
       width: 280px;
       padding: 16px;
       border-radius: 14px;
-      background: rgba(22, 26, 34, 0.95);
+      background: var(--card-bg, rgba(22, 26, 34, 0.95));
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
       backdrop-filter: blur(10px);
       transition: transform 0.2s ease, opacity 0.2s ease;
@@ -65,12 +65,12 @@
     }
 
     .primary {
-      background: #3b82f6;
+      background: var(--card-bg, #3b82f6);
       color: white;
     }
 
     .primary:hover {
-      background: #2563eb;
+      filter: brightness(1.15);
     }
 
     .secondary {
@@ -95,6 +95,7 @@
       const card = document.createElement('div');
       card.className = 'card';
       card.dataset.id = data.id;
+      card.style.setProperty('--card-bg', data.color);
 
       const desc = data.description
         ? `<div class="description">${data.description}</div>`
