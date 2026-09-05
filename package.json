@@ -1,0 +1,26 @@
+{
+  "name": "desktop-reminder",
+  "packageManager": "yarn@4.14.1",
+  "version": "2.0.0",
+  "description": "Desktop reminder with cron scheduling",
+  "main": "src/main.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "cron-parser": "^5.10.0",
+    "electron": "^43.0.0",
+    "node-cron": "^4.6.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "jest --coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "jest": "^30.5.1"
+  }
+}

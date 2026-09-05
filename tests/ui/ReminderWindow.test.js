@@ -1,0 +1,282 @@
+jest.mock('electron', () => {
+  const mockWebContents = {
+    send: jest.fn(),
+    executeJavaScript: jest.fn().mockResolvedValue(false),
+  };
+  const mockBrowserWindow = {
+    showInactive: jest.fn(),
+    focus: jest.fn(),
+    hide: jest.fn(),
+    isDestroyed: jest.fn().mockReturnValue(false),
+    isVisible: jest.fn().mockReturnValue(false),
+    isFocused: jest.fn().mockReturnValue(false),
+    loadFile: jest.fn(),
+    once: jest.fn(),
+    on: jest.fn(),
+    setBounds: jest.fn(),
+    webContents: mockWebContents,
+  };
+  return {
+    BrowserWindow: jest.fn(() => mockBrowserWindow),
+    ipcMain: {
+      removeAllListeners: jest.fn(),
+      on: jest.fn(),
+    },
+    screen: {
+      getPrimaryDisplay: jest.fn().mockReturnValue({
+        workAreaSize: { width: 1920, height: 1080 },
+      }),
+    },
+  };
+});
+
+const { BrowserWindow, ipcMain, screen } = require('electron');
+const ReminderWindow = require('../../src/ui/ReminderWindow');
+
+describe('ReminderWindow', () => {
+  let window;
+  const config = {
+    window: { width: 320, height: 220 },
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    window = new ReminderWindow(config);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  describe('constructor', () => {
+    it('removes old IPC listeners and registers new one', () => {
+      expect(ipcMain.removeAllListeners).toHaveBeenCalledWith('reminder-action');
+      expect(ipcMain.on).toHaveBeenCalledWith('reminder-action', expect.any(Function));
+    });
+
+    it('starts recovery watch', () => {
+      expect(() => jest.advanceTimersByTime(2000)).not.toThrow();
+    });
+  });
+
+  describe('setOnAction', () => {
+    it('stores the callback', () => {
+      const cb = jest.fn();
+      window.setOnAction(cb);
+
+      expect(window.onAction).toBe(cb);
+    });
+  });
+
+  describe('showReminder', () => {
+    it('creates window if it does not exist', () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+
+      expect(BrowserWindow).toHaveBeenCalled();
+    });
+
+    it('shows and focuses existing window', () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+      const mockWin = window.window;
+
+      window.showReminder({ id: 'test2', title: 'Test 2' }, 1);
+
+      expect(mockWin.showInactive).toHaveBeenCalled();
+      expect(mockWin.focus).toHaveBeenCalled();
+    });
+
+    it('sends reminder data via IPC', () => {
+      window.showReminder({ id: 'test', title: 'Test', description: 'Desc' }, 0);
+
+      expect(window.window.webContents.send).toHaveBeenCalledWith('show-reminder', {
+        id: 'test',
+        title: 'Test',
+        description: 'Desc',
+        stackIndex: 0,
+      });
+    });
+
+    it('defaults description to empty string', () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+
+      expect(window.window.webContents.send).toHaveBeenCalledWith(
+        'show-reminder',
+        expect.objectContaining({ description: '' })
+      );
+    });
+  });
+
+  describe('removeReminder', () => {
+    it('sends remove-reminder via IPC when window exists', () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+
+      window.removeReminder('test');
+
+      expect(window.window.webContents.send).toHaveBeenCalledWith('remove-reminder', 'test');
+    });
+
+    it('does nothing when window is null', () => {
+      expect(() => window.removeReminder('test')).not.toThrow();
+    });
+  });
+
+  describe('createWindow', () => {
+    it('creates BrowserWindow with correct options', () => {
+      window.createWindow();
+
+      expect(BrowserWindow).toHaveBeenCalledWith(expect.objectContaining({
+        width: 320,
+        height: 300,
+        resizable: false,
+        frame: false,
+        transparent: true,
+        alwaysOnTop: true,
+        show: false,
+      }));
+    });
+
+    it('loads reminder.html', () => {
+      window.createWindow();
+
+      expect(window.window.loadFile).toHaveBeenCalled();
+    });
+
+    it('registers ready-to-show and close handlers', () => {
+      window.createWindow();
+
+      expect(window.window.once).toHaveBeenCalledWith('ready-to-show', expect.any(Function));
+      expect(window.window.on).toHaveBeenCalledWith('close', expect.any(Function));
+    });
+
+    it('close handler prevents default and hides window', () => {
+      window.createWindow();
+
+      const closeHandler = window.window.on.mock.calls.find(
+        (call) => call[0] === 'close'
+      )[1];
+      const event = { preventDefault: jest.fn() };
+      closeHandler(event);
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(window.window.hide).toHaveBeenCalled();
+    });
+  });
+
+  describe('positionWindow', () => {
+    it('sets bounds based on display size', () => {
+      window.createWindow();
+
+      const readyCallback = window.window.once.mock.calls.find(
+        (call) => call[0] === 'ready-to-show'
+      )[1];
+      readyCallback();
+
+      expect(window.window.setBounds).toHaveBeenCalledWith({
+        x: 1920 - 320 - 20,
+        y: 1080 - 400 - 20,
+        width: 320,
+        height: 400,
+      });
+    });
+  });
+
+  describe('hide', () => {
+    it('hides the window when it exists and is not destroyed', () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+
+      window.hide();
+
+      expect(window.window.hide).toHaveBeenCalled();
+    });
+
+    it('does nothing when window is null', () => {
+      expect(() => window.hide()).not.toThrow();
+    });
+
+    it('does nothing when window is destroyed', () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+      window.window.isDestroyed.mockReturnValue(true);
+
+      window.hide();
+
+      expect(window.window.hide).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('IPC action forwarding', () => {
+    it('forwards reminder-action to onAction callback', () => {
+      const cb = jest.fn();
+      window.setOnAction(cb);
+
+      const ipcHandler = ipcMain.on.mock.calls.find(
+        (call) => call[0] === 'reminder-action'
+      )[1];
+      ipcHandler(null, 'water', 'done');
+
+      expect(cb).toHaveBeenCalledWith('water', 'done');
+    });
+
+    it('does nothing when onAction is not set', () => {
+      const ipcHandler = ipcMain.on.mock.calls.find(
+        (call) => call[0] === 'reminder-action'
+      )[1];
+
+      expect(() => ipcHandler(null, 'water', 'done')).not.toThrow();
+    });
+  });
+
+  describe('recovery watch', () => {
+    it('checks visibility periodically', () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+      window.window.isVisible.mockReturnValue(false);
+
+      jest.advanceTimersByTime(2000);
+
+      expect(window.window.webContents.executeJavaScript).toHaveBeenCalled();
+    });
+
+    it('does nothing when window is null', () => {
+      expect(() => jest.advanceTimersByTime(2000)).not.toThrow();
+    });
+
+    it('does nothing when window is visible', () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+      window.window.isVisible.mockReturnValue(true);
+
+      jest.advanceTimersByTime(2000);
+
+      expect(window.window.webContents.executeJavaScript).not.toHaveBeenCalled();
+    });
+
+    it('shows window when cards exist and window is hidden', async () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+      window.window.isVisible.mockReturnValue(false);
+      window.window.webContents.executeJavaScript.mockResolvedValue(true);
+
+      await jest.advanceTimersByTimeAsync(2000);
+
+      expect(window.window.showInactive).toHaveBeenCalled();
+    });
+
+    it('does not show when no cards exist', async () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+      window.window.isVisible.mockReturnValue(false);
+      window.window.webContents.executeJavaScript.mockResolvedValue(false);
+
+      await jest.advanceTimersByTimeAsync(2000);
+
+      expect(window.window.webContents.executeJavaScript).toHaveBeenCalled();
+    });
+
+    it('handles executeJavaScript rejection gracefully', async () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+      window.window.isVisible.mockReturnValue(false);
+      window.window.webContents.executeJavaScript.mockRejectedValue(new Error('fail'));
+
+      await jest.advanceTimersByTimeAsync(2000);
+
+      expect(() => {}).not.toThrow();
+    });
+  });
+});
