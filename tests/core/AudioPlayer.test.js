@@ -131,33 +131,33 @@ describe('AudioPlayer', () => {
     it('returns null when sounds directory does not exist', () => {
       fs.existsSync.mockReturnValue(false);
 
-      expect(player.pickRandom('drink-water', 'wake-up')).toBeNull();
+      expect(player.pickRandom('drink-water', 'alert')).toBeNull();
     });
 
     it('returns null when no matching files found', () => {
       fs.existsSync.mockReturnValue(true);
       fs.readdirSync.mockReturnValue(['other-file.mp3', 'readme.txt']);
 
-      expect(player.pickRandom('drink-water', 'wake-up')).toBeNull();
+      expect(player.pickRandom('drink-water', 'alert')).toBeNull();
     });
 
     it('returns a matching file path', () => {
       fs.existsSync.mockReturnValue(true);
       fs.readdirSync.mockReturnValue([
-        'drink-water-wake-up-1.mp3',
-        'drink-water-wake-up-2.mp3',
+        'drink-water-alert-1.mp3',
+        'drink-water-alert-2.mp3',
       ]);
 
-      const result = player.pickRandom('drink-water', 'wake-up');
+      const result = player.pickRandom('drink-water', 'alert');
 
-      expect(result).toMatch(/drink-water-wake-up-\d\.mp3$/);
+      expect(result).toMatch(/drink-water-alert-\d\.mp3$/);
     });
 
     it('matches exact naming pattern', () => {
       fs.existsSync.mockReturnValue(true);
       fs.readdirSync.mockReturnValue([
         'drink-water-done-1.mp3',
-        'drink-water-wake-up-1.mp3',
+        'drink-water-alert-1.mp3',
         'other-done-1.mp3',
       ]);
 
@@ -168,22 +168,22 @@ describe('AudioPlayer', () => {
 
     it('handles regex special characters in id', () => {
       fs.existsSync.mockReturnValue(true);
-      fs.readdirSync.mockReturnValue(['my.reminder-wake-up-1.mp3']);
+      fs.readdirSync.mockReturnValue(['my.reminder-alert-1.mp3']);
 
-      const result = player.pickRandom('my.reminder', 'wake-up');
+      const result = player.pickRandom('my.reminder', 'alert');
 
-      expect(result).toMatch(/my\.reminder-wake-up-1\.mp3$/);
+      expect(result).toMatch(/my\.reminder-alert-1\.mp3$/);
     });
 
     it('returns only .mp3 files', () => {
       fs.existsSync.mockReturnValue(true);
       fs.readdirSync.mockReturnValue([
-        'drink-water-wake-up-1.mp3',
-        'drink-water-wake-up-1.txt',
-        'drink-water-wake-up-1',
+        'drink-water-alert-1.mp3',
+        'drink-water-alert-1.txt',
+        'drink-water-alert-1',
       ]);
 
-      const result = player.pickRandom('drink-water', 'wake-up');
+      const result = player.pickRandom('drink-water', 'alert');
 
       expect(result).toMatch(/\.mp3$/);
     });

@@ -27,7 +27,7 @@ class AppTray {
     for (const r of reminders) {
       if (activeIds.includes(r.id)) {
         items.push({
-          label: `Feito - "${r.title}"`,
+          label: `Done - "${r.title}"`,
           click: () => {
             if (this.onAction) {
               this.onAction(r.id, 'done');
@@ -35,7 +35,7 @@ class AppTray {
           },
         });
         items.push({
-          label: `Adiar - "${r.title}"`,
+          label: `Snooze - "${r.title}"`,
           click: () => {
             if (this.onAction) {
               this.onAction(r.id, 'snooze');

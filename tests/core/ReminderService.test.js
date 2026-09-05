@@ -19,6 +19,7 @@ describe('ReminderService', () => {
     mockReminderWindow = {
       showReminder: jest.fn(),
       hide: jest.fn(),
+      removeReminder: jest.fn(),
     };
 
     mockStateStore = {
@@ -37,6 +38,7 @@ describe('ReminderService', () => {
         { id: 'break', title: 'Take Break', cron: '0 10 * * *' },
       ],
       snoozeInterval: 300000,
+      autoSnoozeTimeout: 60000,
     };
 
     service = new ReminderService({
@@ -154,6 +156,18 @@ describe('ReminderService', () => {
 
       expect(mockAudioPlayer.pickRandom).not.toHaveBeenCalled();
     });
+
+    it('removes card from window on resolve', async () => {
+      await service.resolveReminder('water', 'done');
+
+      expect(mockReminderWindow.removeReminder).toHaveBeenCalledWith('water');
+    });
+
+    it('removes card from window on snooze', async () => {
+      await service.resolveReminder('water', 'snooze');
+
+      expect(mockReminderWindow.removeReminder).toHaveBeenCalledWith('water');
+    });
   });
 
   describe('getActiveReminders', () => {
@@ -243,10 +257,10 @@ describe('ReminderService', () => {
   });
 
   describe('queue processing', () => {
-    it('shows reminder after wake-up sound', async () => {
+    it('shows reminder after alert sound', async () => {
       mockStateStore.getNextFireTime.mockResolvedValue(null);
       mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
-      mockAudioPlayer.pickRandom.mockReturnValue('/sounds/water-wake-up-1.mp3');
+      mockAudioPlayer.pickRandom.mockReturnValue('/sounds/water-alert-1.mp3');
 
       await service.start();
 
@@ -258,7 +272,7 @@ describe('ReminderService', () => {
       );
     });
 
-    it('skips wake-up sound when pickRandom returns null', async () => {
+    it('skips alert sound when pickRandom returns null', async () => {
       mockStateStore.getNextFireTime.mockResolvedValue(null);
       mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
       mockAudioPlayer.pickRandom.mockReturnValue(null);
@@ -269,6 +283,29 @@ describe('ReminderService', () => {
 
       expect(mockReminderWindow.showReminder).toHaveBeenCalled();
       expect(mockAudioPlayer.play).not.toHaveBeenCalled();
+    });
+
+    it('snoozes previous when same reminder fires again before resolved', async () => {
+      service.config = {
+        reminders: [{ id: 'water', title: 'Drink Water', cron: '*/40 * * * *' }],
+        snoozeInterval: 300000,
+      };
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockScheduler.getNextFireTime.mockImplementation(
+        () => new Date(Date.now() + 60000)
+      );
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+
+      await jest.advanceTimersByTimeAsync(60000);
+      expect(service.shownReminders.has('water')).toBe(true);
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledTimes(1);
+
+      await jest.advanceTimersByTimeAsync(60000);
+
+      expect(service.activeReminders.has('timeout_water')).toBe(true);
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -293,6 +330,85 @@ describe('ReminderService', () => {
       const secondTimeout = service.activeReminders.get('timeout_water');
 
       expect(firstTimeout).not.toBe(secondTimeout);
+    });
+  });
+
+  describe('per-reminder snoozeInterval', () => {
+    it('uses per-reminder snoozeInterval over global', async () => {
+      service.config.reminders[0].snoozeInterval = 120000;
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.resolveReminder('water', 'snooze');
+
+      expect(service.activeReminders.has('timeout_water')).toBe(true);
+    });
+
+    it('falls back to global snoozeInterval when not set on reminder', async () => {
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.resolveReminder('water', 'snooze');
+
+      expect(service.activeReminders.has('timeout_water')).toBe(true);
+    });
+  });
+
+  describe('autoSnoozeTimeout', () => {
+    it('auto-dismisses popup after timeout', async () => {
+      service.config.reminders[0].autoSnoozeTimeout = 5000;
+      mockStateStore.getNextFireTime.mockResolvedValue('2020-01-01T00:00:00Z');
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+
+      await jest.advanceTimersByTimeAsync(5000);
+
+      expect(mockReminderWindow.hide).toHaveBeenCalled();
+      expect(service.shownReminders.has('water')).toBe(false);
+    });
+
+    it('does not auto-dismiss when autoSnoozeTimeout is 0', async () => {
+      service.config.reminders[0].autoSnoozeTimeout = 0;
+      mockStateStore.getNextFireTime.mockResolvedValue('2020-01-01T00:00:00Z');
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+
+      await jest.advanceTimersByTimeAsync(10000);
+
+      expect(mockReminderWindow.hide).not.toHaveBeenCalled();
+      expect(service.shownReminders.has('water')).toBe(true);
+    });
+
+    it('cancels auto-dismiss when reminder is resolved manually', async () => {
+      service.config.reminders[0].autoSnoozeTimeout = 5000;
+      mockStateStore.getNextFireTime.mockResolvedValue('2020-01-01T00:00:00Z');
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+
+      await service.resolveReminder('water', 'done');
+
+      expect(service.autoDismissTimers.has('water')).toBe(false);
+
+      await jest.advanceTimersByTimeAsync(5000);
+
+      expect(mockReminderWindow.hide).toHaveBeenCalledTimes(1);
+    });
+
+    it('uses per-reminder autoSnoozeTimeout over global', async () => {
+      service.config.reminders[0].autoSnoozeTimeout = 3000;
+      mockStateStore.getNextFireTime.mockResolvedValue('2020-01-01T00:00:00Z');
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+
+      await jest.advanceTimersByTimeAsync(3000);
+
+      expect(mockReminderWindow.hide).toHaveBeenCalled();
     });
   });
 });

@@ -15,8 +15,17 @@ class ReminderService {
     this.processing = false;
     this.activeReminders = new Map();
     this.shownReminders = new Set();
+    this.autoDismissTimers = new Map();
     this.onShow = null;
     this.onDismiss = null;
+  }
+
+  #getSnoozeInterval(reminder) {
+    return reminder.snoozeInterval ?? this.config.snoozeInterval;
+  }
+
+  #getAutoSnoozeTimeout(reminder) {
+    return reminder.autoSnoozeTimeout ?? this.config.autoSnoozeTimeout;
   }
 
   async start() {
@@ -68,6 +77,27 @@ class ReminderService {
     this.activeReminders.set(key, timeout);
   }
 
+  #startAutoDismiss(reminder) {
+    this.#cancelAutoDismiss(reminder.id);
+
+    const timeout = this.#getAutoSnoozeTimeout(reminder);
+    if (!timeout) return;
+
+    const timer = setTimeout(() => {
+      this.autoDismissTimers.delete(reminder.id);
+      this.resolveReminder(reminder.id, REMINDER_ACTIONS.SNOOZE);
+    }, timeout);
+
+    this.autoDismissTimers.set(reminder.id, timer);
+  }
+
+  #cancelAutoDismiss(reminderId) {
+    if (this.autoDismissTimers.has(reminderId)) {
+      clearTimeout(this.autoDismissTimers.get(reminderId));
+      this.autoDismissTimers.delete(reminderId);
+    }
+  }
+
   #fire(reminder) {
     this.queue.push(reminder);
     this.#processQueue();
@@ -79,15 +109,20 @@ class ReminderService {
     this.processing = true;
     const reminder = this.queue.shift();
 
-    const wakeUpSound = this.audioPlayer.pickRandom(reminder.id, 'wake-up');
-    if (wakeUpSound) {
-      await this.audioPlayer.play(wakeUpSound);
+    if (this.shownReminders.has(reminder.id)) {
+      this.#scheduleTimeout(reminder, this.#getSnoozeInterval(reminder));
+    }
+
+    const alertSound = this.audioPlayer.pickRandom(reminder.id, 'alert');
+    if (alertSound) {
+      await this.audioPlayer.play(alertSound);
     }
 
     this.shownReminders.add(reminder.id);
     if (this.onShow) this.onShow(this.getShownReminders());
 
     this.reminderWindow.showReminder(reminder, this.queue.length);
+    this.#startAutoDismiss(reminder);
 
     this.processing = false;
     this.#processQueue();
@@ -97,8 +132,11 @@ class ReminderService {
     const reminder = this.config.reminders.find((r) => r.id === reminderId);
     if (!reminder) return;
 
+    this.#cancelAutoDismiss(reminderId);
     this.shownReminders.delete(reminderId);
     if (this.onDismiss) this.onDismiss(this.getShownReminders());
+
+    this.reminderWindow.removeReminder(reminderId);
 
     if (action === REMINDER_ACTIONS.DONE) {
       const doneSound = this.audioPlayer.pickRandom(reminder.id, 'done');
@@ -113,7 +151,7 @@ class ReminderService {
       }
 
       this.reminderWindow.hide();
-      this.#scheduleTimeout(reminder, this.config.snoozeInterval);
+      this.#scheduleTimeout(reminder, this.#getSnoozeInterval(reminder));
     }
   }
 

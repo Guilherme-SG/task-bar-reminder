@@ -6,8 +6,8 @@ const CONFIG_PATH = path.join(__dirname, '..', '..', 'config.json');
 
 const DEFAULTS = {
   ffplayPath: '',
-  autoSnoozeTimeout: 60000,
-  snoozeInterval: 300000,
+  autoSnoozeTimeout: 60,
+  snoozeInterval: 300,
   window: { width: 320, height: 220, defaultColor: '#1a1a2e' },
 };
 
@@ -16,6 +16,7 @@ class ConfigLoader {
     const raw = ConfigLoader.#readFile();
     const config = ConfigLoader.#applyDefaults(raw);
     ConfigLoader.#validate(config);
+    ConfigLoader.#convertToMs(config);
     return config;
   }
 
@@ -53,6 +54,10 @@ class ConfigLoader {
         throw new Error('Each reminder must have a string "id"');
       }
 
+      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(reminder.id)) {
+        throw new Error(`Reminder "id" must be lowercase kebab-case (e.g., "drink-water")`);
+      }
+
       if (ids.has(reminder.id)) {
         throw new Error(`Duplicate reminder id: "${reminder.id}"`);
       }
@@ -77,6 +82,14 @@ class ConfigLoader {
       if (reminder.color !== undefined && !ConfigLoader.#isValidHex(reminder.color)) {
         throw new Error(`Reminder "${reminder.id}" has invalid color: "${reminder.color}"`);
       }
+
+      if (reminder.snoozeInterval !== undefined && (typeof reminder.snoozeInterval !== 'number' || reminder.snoozeInterval < 0)) {
+        throw new Error(`Reminder "${reminder.id}" snoozeInterval must be a non-negative number`);
+      }
+
+      if (reminder.autoSnoozeTimeout !== undefined && (typeof reminder.autoSnoozeTimeout !== 'number' || reminder.autoSnoozeTimeout < 0)) {
+        throw new Error(`Reminder "${reminder.id}" autoSnoozeTimeout must be a non-negative number`);
+      }
     }
 
     if (config.window.defaultColor !== undefined && !ConfigLoader.#isValidHex(config.window.defaultColor)) {
@@ -89,6 +102,20 @@ class ConfigLoader {
 
     if (typeof config.snoozeInterval !== 'number' || config.snoozeInterval < 0) {
       throw new Error('"snoozeInterval" must be a non-negative number');
+    }
+  }
+
+  static #convertToMs(config) {
+    config.autoSnoozeTimeout *= 1000;
+    config.snoozeInterval *= 1000;
+
+    for (const reminder of config.reminders) {
+      if (reminder.snoozeInterval !== undefined) {
+        reminder.snoozeInterval *= 1000;
+      }
+      if (reminder.autoSnoozeTimeout !== undefined) {
+        reminder.autoSnoozeTimeout *= 1000;
+      }
     }
   }
 

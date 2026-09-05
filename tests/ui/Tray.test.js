@@ -67,7 +67,7 @@ describe('AppTray', () => {
       expect(call[0].label).toBe('Sair');
     });
 
-    it('shows Feito and Adiar for active reminders', () => {
+    it('shows Done and Snooze for active reminders', () => {
       tray.updateMenu(
         [{ id: 'water', title: 'Drink Water' }],
         ['water']
@@ -75,8 +75,8 @@ describe('AppTray', () => {
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
       expect(call).toHaveLength(4);
-      expect(call[0].label).toBe('Feito - "Drink Water"');
-      expect(call[1].label).toBe('Adiar - "Drink Water"');
+      expect(call[0].label).toBe('Done - "Drink Water"');
+      expect(call[1].label).toBe('Snooze - "Drink Water"');
       expect(call[2].type).toBe('separator');
       expect(call[3].label).toBe('Sair');
     });
@@ -91,13 +91,13 @@ describe('AppTray', () => {
       );
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      expect(call[0].label).toBe('Feito - "Drink Water"');
-      expect(call[1].label).toBe('Adiar - "Drink Water"');
+      expect(call[0].label).toBe('Done - "Drink Water"');
+      expect(call[1].label).toBe('Snooze - "Drink Water"');
       expect(call[2].type).toBe('separator');
       expect(call[3].label).toBe('Sair');
     });
 
-    it('calls onAction with done when Feito is clicked', () => {
+    it('calls onAction with done when Done is clicked', () => {
       const cb = jest.fn();
       tray.setOnAction(cb);
 
@@ -112,7 +112,7 @@ describe('AppTray', () => {
       expect(cb).toHaveBeenCalledWith('water', 'done');
     });
 
-    it('calls onAction with snooze when Adiar is clicked', () => {
+    it('calls onAction with snooze when Snooze is clicked', () => {
       const cb = jest.fn();
       tray.setOnAction(cb);
 

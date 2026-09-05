@@ -39,8 +39,8 @@ describe('ConfigLoader', () => {
     it('preserves user-provided values', () => {
       writeConfig({
         ffplayPath: '/custom/path',
-        autoSnoozeTimeout: 5000,
-        snoozeInterval: 10000,
+        autoSnoozeTimeout: 5,
+        snoozeInterval: 10,
         window: { width: 400, height: 300 },
         reminders: [{ id: 'a', title: 'A', cron: '0 * * * *' }],
       });
@@ -110,12 +110,60 @@ describe('ConfigLoader', () => {
     it('throws on duplicate reminder ids', () => {
       writeConfig({
         reminders: [
-          { id: 'a', title: 'A', cron: '0 * * * *' },
-          { id: 'a', title: 'B', cron: '0 * * * *' },
+          { id: 'drink-water', title: 'A', cron: '0 * * * *' },
+          { id: 'drink-water', title: 'B', cron: '0 * * * *' },
         ],
       });
 
       expect(() => ConfigLoader.load()).toThrow('Duplicate reminder id');
+    });
+
+    it('throws when reminder id is not kebab-case', () => {
+      writeConfig({ reminders: [{ id: 'DrinkWater', title: 'A', cron: '0 * * * *' }] });
+
+      expect(() => ConfigLoader.load()).toThrow('lowercase kebab-case');
+    });
+
+    it('throws when reminder id has uppercase', () => {
+      writeConfig({ reminders: [{ id: 'drink-Water', title: 'A', cron: '0 * * * *' }] });
+
+      expect(() => ConfigLoader.load()).toThrow('lowercase kebab-case');
+    });
+
+    it('throws when reminder id has spaces', () => {
+      writeConfig({ reminders: [{ id: 'drink water', title: 'A', cron: '0 * * * *' }] });
+
+      expect(() => ConfigLoader.load()).toThrow('lowercase kebab-case');
+    });
+
+    it('throws when reminder id has special characters', () => {
+      writeConfig({ reminders: [{ id: 'drink_water', title: 'A', cron: '0 * * * *' }] });
+
+      expect(() => ConfigLoader.load()).toThrow('lowercase kebab-case');
+    });
+
+    it('accepts single-word id', () => {
+      writeConfig({ reminders: [{ id: 'water', title: 'A', cron: '0 * * * *' }] });
+
+      expect(() => ConfigLoader.load()).not.toThrow();
+    });
+
+    it('accepts kebab-case id', () => {
+      writeConfig({ reminders: [{ id: 'drink-water', title: 'A', cron: '0 * * * *' }] });
+
+      expect(() => ConfigLoader.load()).not.toThrow();
+    });
+
+    it('accepts multi-part kebab-case id', () => {
+      writeConfig({ reminders: [{ id: 'drink-cold-water', title: 'A', cron: '0 * * * *' }] });
+
+      expect(() => ConfigLoader.load()).not.toThrow();
+    });
+
+    it('accepts id with numbers', () => {
+      writeConfig({ reminders: [{ id: 'water-2', title: 'A', cron: '0 * * * *' }] });
+
+      expect(() => ConfigLoader.load()).not.toThrow();
     });
 
     it('throws when reminder has no title', () => {
@@ -306,6 +354,72 @@ describe('ConfigLoader', () => {
 
       const config = ConfigLoader.load();
       expect(config.window.defaultColor).toBe('#1a1a2e');
+    });
+
+    it('accepts per-reminder snoozeInterval', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', snoozeInterval: 120 }],
+      });
+
+      const config = ConfigLoader.load();
+      expect(config.reminders[0].snoozeInterval).toBe(120000);
+    });
+
+    it('accepts per-reminder autoSnoozeTimeout', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', autoSnoozeTimeout: 30 }],
+      });
+
+      const config = ConfigLoader.load();
+      expect(config.reminders[0].autoSnoozeTimeout).toBe(30000);
+    });
+
+    it('accepts per-reminder snoozeInterval of 0', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', snoozeInterval: 0 }],
+      });
+
+      expect(() => ConfigLoader.load()).not.toThrow();
+    });
+
+    it('accepts per-reminder autoSnoozeTimeout of 0', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', autoSnoozeTimeout: 0 }],
+      });
+
+      expect(() => ConfigLoader.load()).not.toThrow();
+    });
+
+    it('throws when per-reminder snoozeInterval is not a number', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', snoozeInterval: 'bad' }],
+      });
+
+      expect(() => ConfigLoader.load()).toThrow('snoozeInterval must be a non-negative number');
+    });
+
+    it('throws when per-reminder snoozeInterval is negative', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', snoozeInterval: -1 }],
+      });
+
+      expect(() => ConfigLoader.load()).toThrow('snoozeInterval must be a non-negative number');
+    });
+
+    it('throws when per-reminder autoSnoozeTimeout is not a number', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', autoSnoozeTimeout: 'bad' }],
+      });
+
+      expect(() => ConfigLoader.load()).toThrow('autoSnoozeTimeout must be a non-negative number');
+    });
+
+    it('throws when per-reminder autoSnoozeTimeout is negative', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', autoSnoozeTimeout: -1 }],
+      });
+
+      expect(() => ConfigLoader.load()).toThrow('autoSnoozeTimeout must be a non-negative number');
     });
   });
 });
