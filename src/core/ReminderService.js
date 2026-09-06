@@ -1,7 +1,4 @@
-const REMINDER_ACTIONS = {
-  DONE: 'done',
-  SNOOZE: 'snooze',
-};
+const { REMINDER_ACTIONS, TIMEOUT_KEY_PREFIX } = require('../utils/constants.js');
 
 class ReminderService {
   constructor({ scheduler, reminderWindow, stateStore, audioPlayer, config }) {
@@ -62,7 +59,7 @@ class ReminderService {
   }
 
   #scheduleTimeout(reminder, delay) {
-    const key = `timeout_${reminder.id}`;
+    const key = `${TIMEOUT_KEY_PREFIX}${reminder.id}`;
 
     if (this.activeReminders.has(key)) {
       clearTimeout(this.activeReminders.get(key));
@@ -103,6 +100,13 @@ class ReminderService {
     this.#processQueue();
   }
 
+  async #playSound(reminder, soundType) {
+    const sound = this.audioPlayer.pickRandom(reminder.id, soundType);
+    if (sound) {
+      await this.audioPlayer.play(sound);
+    }
+  }
+
   async #processQueue() {
     if (this.processing || this.queue.length === 0) return;
 
@@ -113,10 +117,7 @@ class ReminderService {
       this.#scheduleTimeout(reminder, this.#getSnoozeInterval(reminder));
     }
 
-    const alertSound = this.audioPlayer.pickRandom(reminder.id, 'alert');
-    if (alertSound) {
-      await this.audioPlayer.play(alertSound);
-    }
+    await this.#playSound(reminder, 'alert');
 
     this.shownReminders.add(reminder.id);
     if (this.onShow) this.onShow(this.getShownReminders());
@@ -139,27 +140,13 @@ class ReminderService {
     this.reminderWindow.removeReminder(reminderId);
 
     if (action === REMINDER_ACTIONS.DONE) {
-      const doneSound = this.audioPlayer.pickRandom(reminder.id, 'done');
-      if (doneSound) {
-        await this.audioPlayer.play(doneSound);
-      }
+      await this.#playSound(reminder, 'done');
       this.reminderWindow.hide();
     } else if (action === REMINDER_ACTIONS.SNOOZE) {
-      const snoozeSound = this.audioPlayer.pickRandom(reminder.id, 'snooze');
-      if (snoozeSound) {
-        await this.audioPlayer.play(snoozeSound);
-      }
-
+      await this.#playSound(reminder, 'snooze');
       this.reminderWindow.hide();
       this.#scheduleTimeout(reminder, this.#getSnoozeInterval(reminder));
     }
-  }
-
-  getActiveReminders() {
-    return this.config.reminders.map((r) => ({
-      id: r.id,
-      title: r.title,
-    }));
   }
 
   getShownReminders() {

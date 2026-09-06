@@ -56,7 +56,7 @@ describe('AppTray', () => {
       Menu.buildFromTemplate.mockClear();
     });
 
-    it('shows only Sair when no active reminders', () => {
+    it('shows only Exit when no active reminders', () => {
       tray.updateMenu(
         [{ id: 'water', title: 'Drink Water' }],
         []
@@ -64,7 +64,7 @@ describe('AppTray', () => {
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
       expect(call).toHaveLength(1);
-      expect(call[0].label).toBe('Sair');
+      expect(call[0].label).toBe('Exit');
     });
 
     it('shows Done and Snooze for active reminders', () => {
@@ -78,7 +78,7 @@ describe('AppTray', () => {
       expect(call[0].label).toBe('Done - "Drink Water"');
       expect(call[1].label).toBe('Snooze - "Drink Water"');
       expect(call[2].type).toBe('separator');
-      expect(call[3].label).toBe('Sair');
+      expect(call[3].label).toBe('Exit');
     });
 
     it('mixes active and inactive reminders', () => {
@@ -94,7 +94,7 @@ describe('AppTray', () => {
       expect(call[0].label).toBe('Done - "Drink Water"');
       expect(call[1].label).toBe('Snooze - "Drink Water"');
       expect(call[2].type).toBe('separator');
-      expect(call[3].label).toBe('Sair');
+      expect(call[3].label).toBe('Exit');
     });
 
     it('calls onAction with done when Done is clicked', () => {
@@ -138,7 +138,7 @@ describe('AppTray', () => {
       expect(() => call[1].click()).not.toThrow();
     });
 
-    it('calls onQuit when Sair is clicked', () => {
+    it('calls onQuit when Exit is clicked', () => {
       const onQuit = jest.fn();
       tray.onQuit = onQuit;
 
@@ -163,7 +163,7 @@ describe('AppTray', () => {
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
       expect(call).toHaveLength(1);
-      expect(call[0].label).toBe('Sair');
+      expect(call[0].label).toBe('Exit');
     });
   });
 });

@@ -50,7 +50,7 @@ class AppTray {
     }
 
     items.push({
-      label: 'Sair',
+      label: 'Exit',
       click: () => {
         if (this.onQuit) {
           this.onQuit();

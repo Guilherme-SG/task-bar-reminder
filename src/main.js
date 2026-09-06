@@ -41,14 +41,6 @@ app.whenReady().then(async () => {
   });
 
   reminderWindow.setOnAction((reminderId, action) => {
-    if (action === 'fire-now') {
-      const reminder = config.reminders.find((r) => r.id === reminderId);
-      if (reminder) {
-        reminderService.resolveReminder(reminderId, 'done');
-        reminderService.resolveReminder(reminderId, 'snooze');
-      }
-      return;
-    }
     reminderService.resolveReminder(reminderId, action);
   });
 

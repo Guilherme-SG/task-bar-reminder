@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const cron = require('node-cron');
 
+const { SECONDS_TO_MS } = require('../utils/constants.js');
+
 const CONFIG_PATH = path.join(__dirname, '..', '..', 'config.json');
 
 const DEFAULTS = {
@@ -106,15 +108,15 @@ class ConfigLoader {
   }
 
   static #convertToMs(config) {
-    config.autoSnoozeTimeout *= 1000;
-    config.snoozeInterval *= 1000;
+    config.autoSnoozeTimeout *= SECONDS_TO_MS;
+    config.snoozeInterval *= SECONDS_TO_MS;
 
     for (const reminder of config.reminders) {
       if (reminder.snoozeInterval !== undefined) {
-        reminder.snoozeInterval *= 1000;
+        reminder.snoozeInterval *= SECONDS_TO_MS;
       }
       if (reminder.autoSnoozeTimeout !== undefined) {
-        reminder.autoSnoozeTimeout *= 1000;
+        reminder.autoSnoozeTimeout *= SECONDS_TO_MS;
       }
     }
   }

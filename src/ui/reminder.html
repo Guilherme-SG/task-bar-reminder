@@ -97,6 +97,12 @@
     const { ipcRenderer } = require('electron');
     const stack = document.getElementById('stack');
 
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
     ipcRenderer.on('show-reminder', (_, data) => {
       const card = document.createElement('div');
       card.className = 'card';
@@ -107,11 +113,11 @@
       card.style.setProperty('--text-color', data.textColor);
 
       const desc = data.description
-        ? `<div class="description">${data.description}</div>`
+        ? `<div class="description">${escapeHtml(data.description)}</div>`
         : '';
 
       card.innerHTML = `
-        <div class="title">${data.title}</div>
+        <div class="title">${escapeHtml(data.title)}</div>
         ${desc}
         <div class="buttons">
           <button class="primary" data-action="done">Done</button>

@@ -1,26 +1,6 @@
 const { BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
-
-function getLuminance(hex) {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  return 0.299 * r + 0.587 * g + 0.114 * b;
-}
-
-function lightenColor(hex, amount) {
-  const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amount);
-  const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amount);
-  const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amount);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
-
-function darkenColor(hex, amount) {
-  const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - amount);
-  const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - amount);
-  const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amount);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
+const { deriveButtonColors } = require('../utils/colorUtils.js');
 
 class ReminderWindow {
   constructor(config) {
@@ -51,15 +31,16 @@ class ReminderWindow {
     this.window.focus();
 
     const color = reminder.color || this.config.window.defaultColor;
+    const { buttonBg, snoozeBg, textColor } = deriveButtonColors(color);
 
     const data = {
       id: reminder.id,
       title: reminder.title,
       description: reminder.description || '',
       color,
-      buttonBg: lightenColor(color, 40),
-      snoozeBg: darkenColor(color, 30),
-      textColor: getLuminance(color) < 0.5 ? '#ffffff' : '#1a1a2e',
+      buttonBg,
+      snoozeBg,
+      textColor,
       stackIndex,
     };
 

@@ -170,17 +170,6 @@ describe('ReminderService', () => {
     });
   });
 
-  describe('getActiveReminders', () => {
-    it('returns id and title for all reminders', () => {
-      const result = service.getActiveReminders();
-
-      expect(result).toEqual([
-        { id: 'water', title: 'Drink Water' },
-        { id: 'break', title: 'Take Break' },
-      ]);
-    });
-  });
-
   describe('getShownReminders', () => {
     it('returns empty array when no reminders are shown', () => {
       expect(service.getShownReminders()).toEqual([]);
