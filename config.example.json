@@ -1,0 +1,34 @@
+{
+  "ffplayPath": "",
+  "autoSnoozeTimeout": 60,
+  "snoozeInterval": 300,
+  "window": {
+    "width": 320,
+    "height": 220,
+    "defaultColor": "#1a1a2e"
+  },
+  "reminders": [
+    {
+      "id": "add-first-reminder",
+      "title": "Add your first reminder",
+      "description": "Configure your reminders in the config.json file",
+      "cron": "* * * * *",
+      "color": "#2e3a5f"
+    },
+    {
+      "id": "drink-water",
+      "title": "Drink water",
+      "description": "350ml recommended",
+      "cron": "0 */40 * * * *",
+      "color": "#1e3a5f"
+    },
+    {
+      "id": "stretch",
+      "title": "Time to stretch",
+      "cron": "0 0 10,14,18 * * 1-5",
+      "color": "#2e5f3a",
+      "snoozeInterval": 120,
+      "autoSnoozeTimeout": 30
+    }
+  ]
+}

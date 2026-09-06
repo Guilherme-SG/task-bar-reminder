@@ -27,8 +27,7 @@ class ReminderWindow {
       this.createWindow();
     }
 
-    this.window.showInactive();
-    this.window.focus();
+    this.window.show();
 
     const color = reminder.color || this.config.window.defaultColor;
     const { buttonBg, snoozeBg, textColor } = deriveButtonColors(color);
@@ -113,7 +112,7 @@ class ReminderWindow {
         );
         hasCards.then((has) => {
           if (has && this.window) {
-            this.window.showInactive();
+            this.window.show();
           }
         }).catch(() => {});
       }

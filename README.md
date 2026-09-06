@@ -6,7 +6,8 @@ Desktop reminder app with cron scheduling. Configure reminders via a single JSON
 
 - **Node.js** >= 18.0.0 ([download](https://nodejs.org/))
 - **ffplay.exe** (from FFmpeg) - audio playback required
-  - Download from https://ffmpeg.org/download.html
+  - Download from https://ffmpeg.org/download.html 
+    - For windows go to https://www.gyan.dev/ffmpeg/builds/ or click [here](https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z)
   - Extract and note the path to `ffplay.exe`
 
 ## Setup
@@ -20,7 +21,10 @@ Desktop reminder app with cron scheduling. Configure reminders via a single JSON
    yarn install
    ```
 
-2. Edit `config.json` with your settings.
+2. Copy `config.example.json` to `config.json` and edit with your settings:
+   ```bash
+   copy config.example.json config.json
+   ```
 
 3. Place sound files in the `sounds/` folder following the naming convention.
 
@@ -32,7 +36,7 @@ Desktop reminder app with cron scheduling. Configure reminders via a single JSON
 
 ## Configuration
 
-Edit `config.json` in the project root:
+Copy `config.example.json` to `config.json` and customize it. See `config.example.json` for a complete working example.
 
 ```json
 {

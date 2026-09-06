@@ -4,8 +4,7 @@ jest.mock('electron', () => {
     executeJavaScript: jest.fn().mockResolvedValue(false),
   };
   const mockBrowserWindow = {
-    showInactive: jest.fn(),
-    focus: jest.fn(),
+    show: jest.fn(),
     hide: jest.fn(),
     isDestroyed: jest.fn().mockReturnValue(false),
     isVisible: jest.fn().mockReturnValue(false),
@@ -76,14 +75,13 @@ describe('ReminderWindow', () => {
       expect(BrowserWindow).toHaveBeenCalled();
     });
 
-    it('shows and focuses existing window', () => {
+    it('shows existing window', () => {
       window.showReminder({ id: 'test', title: 'Test' }, 0);
       const mockWin = window.window;
 
       window.showReminder({ id: 'test2', title: 'Test 2' }, 1);
 
-      expect(mockWin.showInactive).toHaveBeenCalled();
-      expect(mockWin.focus).toHaveBeenCalled();
+      expect(mockWin.show).toHaveBeenCalled();
     });
 
     it('sends reminder data via IPC', () => {
@@ -327,7 +325,7 @@ describe('ReminderWindow', () => {
 
       await jest.advanceTimersByTimeAsync(2000);
 
-      expect(window.window.showInactive).toHaveBeenCalled();
+      expect(window.window.show).toHaveBeenCalled();
     });
 
     it('does not show when no cards exist', async () => {
