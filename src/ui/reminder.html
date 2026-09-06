@@ -20,11 +20,15 @@
 
     .stack {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       display: flex;
       flex-direction: column-reverse;
       gap: 8px;
+      padding: 12px;
+      overflow-y: auto;
     }
 
     .card {
@@ -124,8 +128,8 @@
     });
 
     ipcRenderer.on('remove-reminder', (_, reminderId) => {
-      const card = stack.querySelector(`[data-id="${reminderId}"]`);
-      if (card) card.remove();
+      const cards = stack.querySelectorAll(`[data-id="${reminderId}"]`);
+      cards.forEach((card) => card.remove());
     });
   </script>
 </body>

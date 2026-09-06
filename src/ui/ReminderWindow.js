@@ -51,7 +51,7 @@ class ReminderWindow {
 
     this.window = new BrowserWindow({
       width,
-      height: height + 80,
+      height,
       resizable: false,
       frame: false,
       transparent: true,
@@ -83,10 +83,10 @@ class ReminderWindow {
   }
 
   positionWindow() {
-    const { width } = this.config.window;
+    const { width, height } = this.config.window;
     const display = screen.getPrimaryDisplay();
     const { width: screenWidth, height: screenHeight } = display.workAreaSize;
-    const dynamicHeight = Math.min(400, screenHeight / 2);
+    const dynamicHeight = Math.min(height, screenHeight / 2);
 
     this.window.setBounds({
       x: screenWidth - width - 20,

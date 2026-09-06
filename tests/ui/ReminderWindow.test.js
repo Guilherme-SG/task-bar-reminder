@@ -146,7 +146,7 @@ describe('ReminderWindow', () => {
 
       expect(BrowserWindow).toHaveBeenCalledWith(expect.objectContaining({
         width: 320,
-        height: 300,
+        height: 220,
         resizable: false,
         frame: false,
         transparent: true,
@@ -206,9 +206,9 @@ describe('ReminderWindow', () => {
 
       expect(window.window.setBounds).toHaveBeenCalledWith({
         x: 1920 - 320 - 20,
-        y: 1080 - 400 - 20,
+        y: 1080 - 220 - 20,
         width: 320,
-        height: 400,
+        height: 220,
       });
     });
   });
