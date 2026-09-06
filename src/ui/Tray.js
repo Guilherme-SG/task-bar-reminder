@@ -10,7 +10,7 @@ class AppTray {
 
   create() {
     this.tray = new Tray(
-      path.join(__dirname, '..', 'assets', 'images', 'icon.png')
+      path.join(__dirname, '..', '..', 'assets', 'images', 'icon.png')
     );
 
     this.tray.setToolTip('Desktop Reminder');
