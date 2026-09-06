@@ -45,12 +45,14 @@
       font-size: 16px;
       margin-bottom: 8px;
       opacity: 0.9;
+      color: var(--text-color, #e6e6e6);
     }
 
     .description {
       font-size: 13px;
       opacity: 0.6;
       margin-bottom: 14px;
+      color: var(--text-color, #e6e6e6);
     }
 
     .buttons {
@@ -69,8 +71,8 @@
     }
 
     .primary {
-      background: var(--card-bg, #3b82f6);
-      color: white;
+      background: var(--btn-bg, #3b82f6);
+      color: var(--text-color, white);
     }
 
     .primary:hover {
@@ -78,12 +80,12 @@
     }
 
     .secondary {
-      background: #2a2f3a;
-      color: #e6e6e6;
+      background: var(--snooze-bg, #2a2f3a);
+      color: var(--text-color, #e6e6e6);
     }
 
     .secondary:hover {
-      background: #353c4a;
+      filter: brightness(1.15);
     }
   </style>
 </head>
@@ -100,6 +102,9 @@
       card.className = 'card';
       card.dataset.id = data.id;
       card.style.setProperty('--card-bg', data.color);
+      card.style.setProperty('--btn-bg', data.buttonBg);
+      card.style.setProperty('--snooze-bg', data.snoozeBg);
+      card.style.setProperty('--text-color', data.textColor);
 
       const desc = data.description
         ? `<div class="description">${data.description}</div>`

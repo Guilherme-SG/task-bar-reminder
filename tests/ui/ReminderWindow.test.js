@@ -94,6 +94,9 @@ describe('ReminderWindow', () => {
         title: 'Test',
         description: 'Desc',
         color: '#1a1a2e',
+        buttonBg: '#424256',
+        snoozeBg: '#000010',
+        textColor: '#ffffff',
         stackIndex: 0,
       });
     });
@@ -123,6 +126,42 @@ describe('ReminderWindow', () => {
         'show-reminder',
         expect.objectContaining({ color: '#1a1a2e' })
       );
+    });
+
+    it('derives light text color for dark card', () => {
+      window.showReminder({ id: 'test', title: 'Test', color: '#1a1a2e' }, 0);
+
+      expect(window.window.webContents.send).toHaveBeenCalledWith(
+        'show-reminder',
+        expect.objectContaining({ textColor: '#ffffff' })
+      );
+    });
+
+    it('derives dark text color for light card', () => {
+      window.showReminder({ id: 'test', title: 'Test', color: '#ffffff' }, 0);
+
+      expect(window.window.webContents.send).toHaveBeenCalledWith(
+        'show-reminder',
+        expect.objectContaining({ textColor: '#1a1a2e' })
+      );
+    });
+
+    it('derives lighter button background from card color', () => {
+      window.showReminder({ id: 'test', title: 'Test', color: '#ff0000' }, 0);
+
+      const call = window.window.webContents.send.mock.calls.find(
+        (c) => c[0] === 'show-reminder'
+      )[1];
+      expect(call.buttonBg).toBe('#ff2828');
+    });
+
+    it('derives darker snooze background from card color', () => {
+      window.showReminder({ id: 'test', title: 'Test', color: '#ff0000' }, 0);
+
+      const call = window.window.webContents.send.mock.calls.find(
+        (c) => c[0] === 'show-reminder'
+      )[1];
+      expect(call.snoozeBg).toBe('#e10000');
     });
   });
 

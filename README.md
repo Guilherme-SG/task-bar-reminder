@@ -78,7 +78,7 @@ Edit `config.json` in the project root:
 | `title` | string | Yes | Displayed in the popup header. |
 | `description` | string | No | Displayed below the title. |
 | `cron` | string | Yes | Cron expression for scheduling. |
-| `color` | string | No | Card color as hex (e.g., `"#1e3a5f"`). Uses `window.defaultColor` if not set. |
+| `color` | string | No | Card color as hex (e.g., `"#1e3a5f"`). Uses `window.defaultColor` if not set. Button colors and text color are automatically derived from this value. |
 | `snoozeInterval` | number | No | Seconds before retrying after snooze. Overrides global `snoozeInterval`. |
 | `autoSnoozeTimeout` | number | No | Seconds before auto-dismissing the popup. Overrides global `autoSnoozeTimeout`. Set to `0` to disable. |
 
