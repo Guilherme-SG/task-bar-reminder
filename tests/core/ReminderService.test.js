@@ -87,86 +87,95 @@ describe('ReminderService', () => {
   });
 
   describe('resolveReminder', () => {
-    it('plays done sound on done action', async () => {
+    it('plays done sound on done action', () => {
       mockAudioPlayer.pickRandom.mockReturnValue('/sounds/water-done-1.mp3');
 
-      await service.resolveReminder('water', 'done');
+      service.resolveReminder('water', 'done');
 
       expect(mockAudioPlayer.pickRandom).toHaveBeenCalledWith('water', 'done');
       expect(mockAudioPlayer.play).toHaveBeenCalledWith('/sounds/water-done-1.mp3');
     });
 
-    it('hides window on done', async () => {
+    it('hides window on done', () => {
       mockAudioPlayer.pickRandom.mockReturnValue(null);
 
-      await service.resolveReminder('water', 'done');
+      service.resolveReminder('water', 'done');
 
       expect(mockReminderWindow.hide).toHaveBeenCalled();
     });
 
-    it('skips done sound when pickRandom returns null', async () => {
+    it('skips done sound when pickRandom returns null', () => {
       mockAudioPlayer.pickRandom.mockReturnValue(null);
 
-      await service.resolveReminder('water', 'done');
+      service.resolveReminder('water', 'done');
 
       expect(mockAudioPlayer.play).not.toHaveBeenCalled();
     });
 
-    it('plays snooze sound on snooze action', async () => {
+    it('plays snooze sound on snooze action', () => {
       mockAudioPlayer.pickRandom.mockReturnValue('/sounds/water-snooze-1.mp3');
 
-      await service.resolveReminder('water', 'snooze');
+      service.resolveReminder('water', 'snooze');
 
       expect(mockAudioPlayer.pickRandom).toHaveBeenCalledWith('water', 'snooze');
       expect(mockAudioPlayer.play).toHaveBeenCalledWith('/sounds/water-snooze-1.mp3');
     });
 
-    it('skips snooze sound when pickRandom returns null', async () => {
+    it('skips snooze sound when pickRandom returns null', () => {
       mockAudioPlayer.pickRandom.mockReturnValue(null);
 
-      await service.resolveReminder('water', 'snooze');
+      service.resolveReminder('water', 'snooze');
 
       expect(mockAudioPlayer.play).not.toHaveBeenCalled();
     });
 
-    it('schedules next timeout on snooze', async () => {
+    it('schedules next timeout on snooze', () => {
       mockAudioPlayer.pickRandom.mockReturnValue(null);
 
-      await service.resolveReminder('water', 'snooze');
+      service.resolveReminder('water', 'snooze');
 
       expect(service.activeReminders.has('timeout_water')).toBe(true);
     });
 
-    it('hides window on snooze', async () => {
+    it('hides window on snooze', () => {
       mockAudioPlayer.pickRandom.mockReturnValue(null);
 
-      await service.resolveReminder('water', 'snooze');
+      service.resolveReminder('water', 'snooze');
 
       expect(mockReminderWindow.hide).toHaveBeenCalled();
     });
 
-    it('does nothing for unknown reminder id', async () => {
-      await service.resolveReminder('nonexistent', 'done');
+    it('does nothing for unknown reminder id', () => {
+      service.resolveReminder('nonexistent', 'done');
 
       expect(mockAudioPlayer.pickRandom).not.toHaveBeenCalled();
     });
 
-    it('does nothing for unknown action', async () => {
-      await service.resolveReminder('water', 'unknown');
+    it('does nothing for unknown action', () => {
+      service.resolveReminder('water', 'unknown');
 
       expect(mockAudioPlayer.pickRandom).not.toHaveBeenCalled();
     });
 
-    it('removes card from window on resolve', async () => {
-      await service.resolveReminder('water', 'done');
+    it('removes card from window on resolve', () => {
+      service.resolveReminder('water', 'done');
 
       expect(mockReminderWindow.removeReminder).toHaveBeenCalledWith('water');
     });
 
-    it('removes card from window on snooze', async () => {
-      await service.resolveReminder('water', 'snooze');
+    it('removes card from window on snooze', () => {
+      service.resolveReminder('water', 'snooze');
 
       expect(mockReminderWindow.removeReminder).toHaveBeenCalledWith('water');
+    });
+
+    it('done sound stops current alarm', () => {
+      mockAudioPlayer.pickRandom.mockReturnValue('/sounds/water-done-1.mp3');
+
+      service.resolveReminder('water', 'done');
+
+      expect(mockAudioPlayer.play).toHaveBeenCalledWith('/sounds/water-done-1.mp3');
+      expect(mockReminderWindow.hide).toHaveBeenCalled();
     });
   });
 
@@ -199,7 +208,7 @@ describe('ReminderService', () => {
       await service.start();
       expect(service.getShownReminders()).toHaveLength(1);
 
-      await service.resolveReminder('water', 'done');
+      service.resolveReminder('water', 'done');
       expect(service.getShownReminders()).toHaveLength(0);
     });
   });
@@ -231,7 +240,7 @@ describe('ReminderService', () => {
       mockAudioPlayer.pickRandom.mockReturnValue(null);
 
       await service.start();
-      await service.resolveReminder('water', 'done');
+      service.resolveReminder('water', 'done');
 
       expect(onDismiss).toHaveBeenCalledWith([]);
     });
@@ -246,7 +255,7 @@ describe('ReminderService', () => {
   });
 
   describe('queue processing', () => {
-    it('shows reminder after alert sound', async () => {
+    it('shows reminder simultaneously with alert sound', async () => {
       mockStateStore.getNextFireTime.mockResolvedValue(null);
       mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
       mockAudioPlayer.pickRandom.mockReturnValue('/sounds/water-alert-1.mp3');
@@ -255,6 +264,7 @@ describe('ReminderService', () => {
 
       await jest.advanceTimersByTimeAsync(60000);
 
+      expect(mockAudioPlayer.play).toHaveBeenCalledWith('/sounds/water-alert-1.mp3');
       expect(mockReminderWindow.showReminder).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'water' }),
         expect.any(Number)
@@ -272,6 +282,51 @@ describe('ReminderService', () => {
 
       expect(mockReminderWindow.showReminder).toHaveBeenCalled();
       expect(mockAudioPlayer.play).not.toHaveBeenCalled();
+    });
+
+    it('new alert stops previous alarm sound', async () => {
+      service.config.reminders = [
+        { id: 'water', title: 'Drink Water', cron: '*/40 * * * *' },
+        { id: 'break', title: 'Take Break', cron: '*/40 * * * *' },
+      ];
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom
+        .mockReturnValueOnce('/sounds/water-alert-1.mp3')
+        .mockReturnValueOnce('/sounds/break-alert-1.mp3');
+
+      await service.start();
+
+      await jest.advanceTimersByTimeAsync(60000);
+
+      expect(mockAudioPlayer.play).toHaveBeenCalledTimes(2);
+      expect(mockAudioPlayer.play).toHaveBeenNthCalledWith(1, '/sounds/water-alert-1.mp3');
+      expect(mockAudioPlayer.play).toHaveBeenNthCalledWith(2, '/sounds/break-alert-1.mp3');
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledTimes(2);
+    });
+
+    it('shows multiple reminder windows simultaneously', async () => {
+      service.config.reminders = [
+        { id: 'water', title: 'Drink Water', cron: '*/40 * * * *' },
+        { id: 'break', title: 'Take Break', cron: '*/40 * * * *' },
+      ];
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+
+      await jest.advanceTimersByTimeAsync(60000);
+
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledTimes(2);
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'water' }),
+        expect.any(Number)
+      );
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'break' }),
+        expect.any(Number)
+      );
     });
 
     it('snoozes previous when same reminder fires again before resolved', async () => {
@@ -308,14 +363,14 @@ describe('ReminderService', () => {
       expect(service.activeReminders.has('timeout_water')).toBe(true);
     });
 
-    it('replaces existing timeout when scheduling same reminder again', async () => {
+    it('replaces existing timeout when scheduling same reminder again', () => {
       mockAudioPlayer.pickRandom.mockReturnValue(null);
       mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
 
-      await service.resolveReminder('water', 'snooze');
+      service.resolveReminder('water', 'snooze');
       const firstTimeout = service.activeReminders.get('timeout_water');
 
-      await service.resolveReminder('water', 'snooze');
+      service.resolveReminder('water', 'snooze');
       const secondTimeout = service.activeReminders.get('timeout_water');
 
       expect(firstTimeout).not.toBe(secondTimeout);
@@ -323,19 +378,19 @@ describe('ReminderService', () => {
   });
 
   describe('per-reminder snoozeInterval', () => {
-    it('uses per-reminder snoozeInterval over global', async () => {
+    it('uses per-reminder snoozeInterval over global', () => {
       service.config.reminders[0].snoozeInterval = 120000;
       mockAudioPlayer.pickRandom.mockReturnValue(null);
 
-      await service.resolveReminder('water', 'snooze');
+      service.resolveReminder('water', 'snooze');
 
       expect(service.activeReminders.has('timeout_water')).toBe(true);
     });
 
-    it('falls back to global snoozeInterval when not set on reminder', async () => {
+    it('falls back to global snoozeInterval when not set on reminder', () => {
       mockAudioPlayer.pickRandom.mockReturnValue(null);
 
-      await service.resolveReminder('water', 'snooze');
+      service.resolveReminder('water', 'snooze');
 
       expect(service.activeReminders.has('timeout_water')).toBe(true);
     });
@@ -378,7 +433,7 @@ describe('ReminderService', () => {
 
       await service.start();
 
-      await service.resolveReminder('water', 'done');
+      service.resolveReminder('water', 'done');
 
       expect(service.autoDismissTimers.has('water')).toBe(false);
 

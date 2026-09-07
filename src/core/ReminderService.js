@@ -9,7 +9,6 @@ class ReminderService {
     this.config = config;
 
     this.queue = [];
-    this.processing = false;
     this.activeReminders = new Map();
     this.shownReminders = new Set();
     this.autoDismissTimers = new Map();
@@ -100,36 +99,32 @@ class ReminderService {
     this.#processQueue();
   }
 
-  async #playSound(reminder, soundType) {
+  #playSound(reminder, soundType) {
     const sound = this.audioPlayer.pickRandom(reminder.id, soundType);
     if (sound) {
-      await this.audioPlayer.play(sound);
+      this.audioPlayer.play(sound);
     }
   }
 
-  async #processQueue() {
-    if (this.processing || this.queue.length === 0) return;
+  #processQueue() {
+    while (this.queue.length > 0) {
+      const reminder = this.queue.shift();
 
-    this.processing = true;
-    const reminder = this.queue.shift();
+      if (this.shownReminders.has(reminder.id)) {
+        this.#scheduleTimeout(reminder, this.#getSnoozeInterval(reminder));
+      }
 
-    if (this.shownReminders.has(reminder.id)) {
-      this.#scheduleTimeout(reminder, this.#getSnoozeInterval(reminder));
+      this.#playSound(reminder, 'alert');
+
+      this.shownReminders.add(reminder.id);
+      if (this.onShow) this.onShow(this.getShownReminders());
+
+      this.reminderWindow.showReminder(reminder, this.queue.length);
+      this.#startAutoDismiss(reminder);
     }
-
-    await this.#playSound(reminder, 'alert');
-
-    this.shownReminders.add(reminder.id);
-    if (this.onShow) this.onShow(this.getShownReminders());
-
-    this.reminderWindow.showReminder(reminder, this.queue.length);
-    this.#startAutoDismiss(reminder);
-
-    this.processing = false;
-    this.#processQueue();
   }
 
-  async resolveReminder(reminderId, action) {
+  resolveReminder(reminderId, action) {
     const reminder = this.config.reminders.find((r) => r.id === reminderId);
     if (!reminder) return;
 
@@ -140,10 +135,10 @@ class ReminderService {
     this.reminderWindow.removeReminder(reminderId);
 
     if (action === REMINDER_ACTIONS.DONE) {
-      await this.#playSound(reminder, 'done');
+      this.#playSound(reminder, 'done');
       this.reminderWindow.hide();
     } else if (action === REMINDER_ACTIONS.SNOOZE) {
-      await this.#playSound(reminder, 'snooze');
+      this.#playSound(reminder, 'snooze');
       this.reminderWindow.hide();
       this.#scheduleTimeout(reminder, this.#getSnoozeInterval(reminder));
     }
