@@ -10,6 +10,7 @@ jest.mock('electron', () => {
     },
     app: {
       quit: jest.fn(),
+      relaunch: jest.fn(),
     },
   };
 });
@@ -56,15 +57,16 @@ describe('AppTray', () => {
       Menu.buildFromTemplate.mockClear();
     });
 
-    it('shows only Exit when no active reminders', () => {
+    it('shows only Restart and Exit when no active reminders', () => {
       tray.updateMenu(
         [{ id: 'water', title: 'Drink Water' }],
         []
       );
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      expect(call).toHaveLength(1);
-      expect(call[0].label).toBe('Exit');
+      expect(call).toHaveLength(2);
+      expect(call[0].label).toBe('Restart');
+      expect(call[1].label).toBe('Exit');
     });
 
     it('shows Done and Snooze for active reminders', () => {
@@ -74,11 +76,12 @@ describe('AppTray', () => {
       );
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      expect(call).toHaveLength(4);
+      expect(call).toHaveLength(5);
       expect(call[0].label).toBe('Done - "Drink Water"');
       expect(call[1].label).toBe('Snooze - "Drink Water"');
       expect(call[2].type).toBe('separator');
-      expect(call[3].label).toBe('Exit');
+      expect(call[3].label).toBe('Restart');
+      expect(call[4].label).toBe('Exit');
     });
 
     it('mixes active and inactive reminders', () => {
@@ -94,7 +97,8 @@ describe('AppTray', () => {
       expect(call[0].label).toBe('Done - "Drink Water"');
       expect(call[1].label).toBe('Snooze - "Drink Water"');
       expect(call[2].type).toBe('separator');
-      expect(call[3].label).toBe('Exit');
+      expect(call[3].label).toBe('Restart');
+      expect(call[4].label).toBe('Exit');
     });
 
     it('calls onAction with done when Done is clicked', () => {
@@ -145,7 +149,7 @@ describe('AppTray', () => {
       tray.updateMenu([], []);
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      call[0].click();
+      call[1].click();
 
       expect(onQuit).toHaveBeenCalled();
     });
@@ -154,7 +158,7 @@ describe('AppTray', () => {
       tray.updateMenu([], []);
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      call[0].click();
+      call[1].click();
 
       expect(app.quit).toHaveBeenCalled();
     });
@@ -162,8 +166,28 @@ describe('AppTray', () => {
       tray.updateMenu([{ id: 'water', title: 'Drink Water' }]);
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      expect(call).toHaveLength(1);
-      expect(call[0].label).toBe('Exit');
+      expect(call).toHaveLength(2);
+      expect(call[0].label).toBe('Restart');
+      expect(call[1].label).toBe('Exit');
+    });
+
+    it('calls onRestart when Restart is clicked', () => {
+      const onRestart = jest.fn();
+      tray.onRestart = onRestart;
+
+      tray.updateMenu([], []);
+
+      const call = Menu.buildFromTemplate.mock.calls[0][0];
+      call[0].click();
+
+      expect(onRestart).toHaveBeenCalled();
+    });
+
+    it('does not throw when onRestart is not set', () => {
+      tray.updateMenu([], []);
+
+      const call = Menu.buildFromTemplate.mock.calls[0][0];
+      expect(() => call[0].click()).not.toThrow();
     });
   });
 });

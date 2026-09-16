@@ -6,6 +6,7 @@ class AppTray {
     this.tray = null;
     this.onAction = null;
     this.onQuit = null;
+    this.onRestart = null;
   }
 
   create() {
@@ -48,6 +49,15 @@ class AppTray {
     if (items.length > 0) {
       items.push({ type: 'separator' });
     }
+
+    items.push({
+      label: 'Restart',
+      click: () => {
+        if (this.onRestart) {
+          this.onRestart();
+        }
+      },
+    });
 
     items.push({
       label: 'Exit',

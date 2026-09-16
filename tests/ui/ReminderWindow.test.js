@@ -298,6 +298,7 @@ describe('ReminderWindow', () => {
   describe('recovery watch', () => {
     it('checks visibility periodically', () => {
       window.showReminder({ id: 'test', title: 'Test' }, 0);
+      window.window.isDestroyed.mockReturnValue(false);
       window.window.isVisible.mockReturnValue(false);
 
       jest.advanceTimersByTime(2000);
@@ -311,7 +312,17 @@ describe('ReminderWindow', () => {
 
     it('does nothing when window is visible', () => {
       window.showReminder({ id: 'test', title: 'Test' }, 0);
+      window.window.isDestroyed.mockReturnValue(false);
       window.window.isVisible.mockReturnValue(true);
+
+      jest.advanceTimersByTime(2000);
+
+      expect(window.window.webContents.executeJavaScript).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when window is destroyed', () => {
+      window.showReminder({ id: 'test', title: 'Test' }, 0);
+      window.window.isDestroyed.mockReturnValue(true);
 
       jest.advanceTimersByTime(2000);
 
@@ -320,6 +331,7 @@ describe('ReminderWindow', () => {
 
     it('shows window when cards exist and window is hidden', async () => {
       window.showReminder({ id: 'test', title: 'Test' }, 0);
+      window.window.isDestroyed.mockReturnValue(false);
       window.window.isVisible.mockReturnValue(false);
       window.window.webContents.executeJavaScript.mockResolvedValue(true);
 
@@ -330,6 +342,7 @@ describe('ReminderWindow', () => {
 
     it('does not show when no cards exist', async () => {
       window.showReminder({ id: 'test', title: 'Test' }, 0);
+      window.window.isDestroyed.mockReturnValue(false);
       window.window.isVisible.mockReturnValue(false);
       window.window.webContents.executeJavaScript.mockResolvedValue(false);
 
@@ -340,6 +353,7 @@ describe('ReminderWindow', () => {
 
     it('handles executeJavaScript rejection gracefully', async () => {
       window.showReminder({ id: 'test', title: 'Test' }, 0);
+      window.window.isDestroyed.mockReturnValue(false);
       window.window.isVisible.mockReturnValue(false);
       window.window.webContents.executeJavaScript.mockRejectedValue(new Error('fail'));
 

@@ -78,7 +78,9 @@ describe('ReminderService', () => {
 
     it('schedules timeout for saved future time', async () => {
       const futureTime = new Date(Date.now() + 60000);
-      mockStateStore.getNextFireTime.mockResolvedValue(futureTime.toISOString());
+      const offset = futureTime.getTimezoneOffset() * 60000;
+      const local = new Date(futureTime.getTime() - offset);
+      mockStateStore.getNextFireTime.mockResolvedValue(local.toISOString().slice(0, 19));
 
       await service.start();
 

@@ -47,6 +47,12 @@ app.whenReady().then(async () => {
   tray.create();
   tray.updateMenu(config.reminders, []);
 
+  tray.onRestart = () => {
+    reminderWindow.quitting = true;
+    app.relaunch();
+    app.quit();
+  };
+
   tray.onQuit = () => {
     reminderWindow.quitting = true;
     app.quit();

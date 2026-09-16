@@ -106,7 +106,7 @@ class ReminderWindow {
     setInterval(() => {
       if (!this.window) return;
 
-      if (!this.window.isVisible() && this.window.webContents) {
+      if (!this.window.isDestroyed() && !this.window.isVisible() && this.window.webContents) {
         const hasCards = this.window.webContents.executeJavaScript(
           'document.getElementById("stack").children.length > 0'
         );
