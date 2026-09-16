@@ -14,6 +14,7 @@ describe('ReminderService', () => {
 
     mockScheduler = {
       getNextFireTime: jest.fn(),
+      getInterval: jest.fn(),
     };
 
     mockReminderWindow = {
@@ -154,6 +155,19 @@ describe('ReminderService', () => {
       const savedMs = new Date(savedTime).getTime();
       expect(savedMs).toBeGreaterThan(before);
       expect(savedMs).toBeLessThanOrEqual(before + 300000);
+    });
+
+    it('snooze schedules next fire using cron interval from now', async () => {
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+      const cronInterval = 40 * 60 * 1000;
+      mockScheduler.getInterval.mockReturnValue(cronInterval);
+
+      service.resolveReminder('water', 'snooze');
+
+      await jest.advanceTimersByTimeAsync(300000);
+
+      expect(mockScheduler.getInterval).toHaveBeenCalledWith('*/40 * * * *');
+      expect(service.activeReminders.has('timeout_water')).toBe(true);
     });
 
     it('hides window on snooze', () => {

@@ -59,17 +59,30 @@ class ReminderService {
     this.#scheduleTimeout(reminder, delay);
   }
 
-  #scheduleTimeout(reminder, delay) {
+  #scheduleNextFromNow(reminder) {
+    const interval = this.scheduler.getInterval(reminder.cron);
+    const nextFireTime = Date.now() + interval;
+
+    const date = new Date(nextFireTime);
+    const offset = date.getTimezoneOffset() * 60000;
+    const local = new Date(date.getTime() - offset);
+    this.stateStore.setNextFireTime(reminder.id, local.toISOString().slice(0, 19));
+    this.#scheduleTimeout(reminder, interval);
+  }
+
+  #scheduleTimeout(reminder, delay, onFire) {
     const key = `${TIMEOUT_KEY_PREFIX}${reminder.id}`;
 
     if (this.activeReminders.has(key)) {
       clearTimeout(this.activeReminders.get(key));
     }
 
+    const callback = onFire || (() => this.#scheduleNext(reminder));
+
     const timeout = setTimeout(() => {
       this.activeReminders.delete(key);
       this.#fire(reminder);
-      this.#scheduleNext(reminder);
+      callback();
     }, Math.max(0, delay));
 
     this.activeReminders.set(key, timeout);
@@ -118,10 +131,6 @@ class ReminderService {
     while (this.queue.length > 0) {
       const reminder = this.queue.shift();
 
-      if (this.shownReminders.has(reminder.id)) {
-        this.#scheduleTimeout(reminder, this.#getSnoozeInterval(reminder));
-      }
-
       this.#playSound(reminder, 'alert');
 
       this.shownReminders.add(reminder.id);
@@ -148,7 +157,7 @@ class ReminderService {
     } else if (action === REMINDER_ACTIONS.SNOOZE) {
       this.#playSound(reminder, 'snooze');
       this.reminderWindow.hide();
-      this.#scheduleTimeout(reminder, this.#getSnoozeInterval(reminder));
+      this.#scheduleTimeout(reminder, this.#getSnoozeInterval(reminder), () => this.#scheduleNextFromNow(reminder));
     }
   }
 
