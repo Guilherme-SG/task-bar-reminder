@@ -60,7 +60,7 @@ Copy `config.example.json` to `config.json` and customize it. See `config.exampl
 }
 ```
 
-> **Note:** The config is read once at startup. After editing `config.json`, restart the app to apply changes.
+> **Note:** The config is read once at startup. After editing `config.json`, use the **Restart** button in the system tray to apply changes.
 
 ### Fields
 
@@ -195,3 +195,14 @@ Each reminder can also override the global `snoozeInterval` and `autoSnoozeTimeo
   "autoSnoozeTimeout": 30
 }
 ```
+
+## System Tray
+
+The app runs in the system tray. Right-click the tray icon to access the menu:
+
+| Item | Description |
+|---|---|
+| **Done - "{title}"** | Dismisses the reminder (shown only when active). |
+| **Snooze - "{title}"** | Snoozes the reminder for `snoozeInterval` seconds (shown only when active). |
+| **Restart** | Restarts the app to reload `config.json`. |
+| **Exit** | Quits the application. |

@@ -18,7 +18,7 @@ src/
   main.js              — entry point, wires all modules
   core/                — business logic (no Electron deps except main.js)
     ConfigLoader.js    — sync fs, validates config.json, converts seconds→ms
-    Scheduler.js       — cron-parser only (node-cron removed from usage)
+    Scheduler.js       — cron-parser: getNextFireTime + getInterval for snooze scheduling
     ReminderService.js — orchestrator: queue, timers, sound, tray callbacks
     AudioPlayer.js     — spawns ffplay, Promise-based
     StateStore.js      — async fs/promises, persists next-fire-time
