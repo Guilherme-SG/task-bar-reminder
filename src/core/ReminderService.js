@@ -32,12 +32,11 @@ class ReminderService {
 
   async #initReminder(reminder) {
     const nextFireTime = await this.stateStore.getNextFireTime(reminder.id);
-    console.log(`Next fire time for reminder "${reminder.id}": ${nextFireTime}`);
+
     if (nextFireTime) {
       const remaining = new Date(nextFireTime).getTime() - Date.now();
-      console.log(`Remaining time for reminder "${reminder.id}": ${remaining} ms`);
+
       if (remaining <= 0) {
-        console.log(`Reminder "${reminder.id}" is overdue. Firing immediately.`);
         this.#fire(reminder);
         this.#scheduleNext(reminder);
         return;
@@ -74,6 +73,12 @@ class ReminderService {
     }, Math.max(0, delay));
 
     this.activeReminders.set(key, timeout);
+
+    const nextFireTime = Date.now() + Math.max(0, delay);
+    const date = new Date(nextFireTime);
+    const offset = date.getTimezoneOffset() * 60000;
+    const local = new Date(date.getTime() - offset);
+    this.stateStore.setNextFireTime(reminder.id, local.toISOString().slice(0, 19));
   }
 
   #startAutoDismiss(reminder) {

@@ -63,7 +63,7 @@ describe('ReminderService', () => {
 
       await service.start();
 
-      expect(mockStateStore.setNextFireTime).toHaveBeenCalledTimes(2);
+      expect(mockStateStore.setNextFireTime).toHaveBeenCalledTimes(4);
     });
 
     it('fires immediately when saved time is in the past', async () => {
@@ -84,7 +84,7 @@ describe('ReminderService', () => {
 
       await service.start();
 
-      expect(mockStateStore.setNextFireTime).not.toHaveBeenCalled();
+      expect(service.activeReminders.has('timeout_water')).toBe(true);
     });
   });
 
@@ -137,6 +137,23 @@ describe('ReminderService', () => {
       service.resolveReminder('water', 'snooze');
 
       expect(service.activeReminders.has('timeout_water')).toBe(true);
+    });
+
+    it('persists next fire time on snooze', () => {
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+      const before = Date.now();
+
+      service.resolveReminder('water', 'snooze');
+
+      expect(mockStateStore.setNextFireTime).toHaveBeenCalledWith(
+        'water',
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/)
+      );
+
+      const savedTime = mockStateStore.setNextFireTime.mock.calls[0][1];
+      const savedMs = new Date(savedTime).getTime();
+      expect(savedMs).toBeGreaterThan(before);
+      expect(savedMs).toBeLessThanOrEqual(before + 300000);
     });
 
     it('hides window on snooze', () => {
