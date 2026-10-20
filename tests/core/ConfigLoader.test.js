@@ -197,6 +197,40 @@ describe('ConfigLoader', () => {
       expect(() => ConfigLoader.load()).toThrow('invalid cron expression');
     });
 
+    it('accepts an array of cron expressions', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: ['0 * * * *', '30 * * * *'] }],
+      });
+
+      const config = ConfigLoader.load();
+
+      expect(config.reminders[0].cron).toEqual(['0 * * * *', '30 * * * *']);
+      expect(cron.validate).toHaveBeenCalledTimes(2);
+      expect(cron.validate).toHaveBeenNthCalledWith(1, '0 * * * *');
+      expect(cron.validate).toHaveBeenNthCalledWith(2, '30 * * * *');
+    });
+
+    it('throws when reminder cron is an empty array', () => {
+      writeConfig({ reminders: [{ id: 'a', title: 'A', cron: [] }] });
+
+      expect(() => ConfigLoader.load()).toThrow('string "cron"');
+    });
+
+    it('throws when reminder cron array contains a non-string', () => {
+      writeConfig({ reminders: [{ id: 'a', title: 'A', cron: ['0 * * * *', 123] }] });
+
+      expect(() => ConfigLoader.load()).toThrow('string "cron"');
+    });
+
+    it('throws when any cron expression in an array is invalid', () => {
+      cron.validate.mockReturnValueOnce(true).mockReturnValueOnce(false);
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: ['0 * * * *', 'invalid'] }],
+      });
+
+      expect(() => ConfigLoader.load()).toThrow('invalid cron expression: "invalid"');
+    });
+
     it('throws when description is not a string', () => {
       writeConfig({
         reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', description: 123 }],

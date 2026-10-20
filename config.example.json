@@ -19,7 +19,10 @@
       "id": "drink-water",
       "title": "Drink water",
       "description": "350ml recommended",
-      "cron": "0 */40 * * * *",
+      "cron": [
+        "0 0,40 0-23/2 * * *",
+        "0 20 1-23/2 * * *"
+      ],
       "color": "#1e3a5f"
     },
     {

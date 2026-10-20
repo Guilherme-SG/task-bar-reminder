@@ -396,6 +396,16 @@ describe('ReminderService', () => {
       expect(service.activeReminders.has('timeout_water')).toBe(true);
     });
 
+    it('passes grouped cron rules to the scheduler', async () => {
+      service.config.reminders[0].cron = ['0 * * * *', '30 * * * *'];
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+
+      await service.start();
+
+      expect(mockScheduler.getNextFireTime).toHaveBeenCalledWith(['0 * * * *', '30 * * * *']);
+    });
+
     it('replaces existing timeout when scheduling same reminder again', () => {
       mockAudioPlayer.pickRandom.mockReturnValue(null);
       mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));

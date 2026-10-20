@@ -53,7 +53,10 @@ Copy `config.example.json` to `config.json` and customize it. See `config.exampl
       "id": "drink-water",
       "title": "Hora de beber água",
       "description": "Meia garrafa/350ml recomendados",
-      "cron": "0 */40 * * * *",
+      "cron": [
+        "0 0,40 0-23/2 * * *",
+        "0 20 1-23/2 * * *"
+      ],
       "color": "#1e3a5f"
     }
   ]
@@ -81,14 +84,14 @@ Copy `config.example.json` to `config.json` and customize it. See `config.exampl
 | `id` | string | Yes | Unique identifier in lowercase kebab-case (e.g., `"drink-water"`). Used for sound file matching. |
 | `title` | string | Yes | Displayed in the popup header. |
 | `description` | string | No | Displayed below the title. |
-| `cron` | string | Yes | Cron expression for scheduling. |
+| `cron` | string or array of strings | Yes | One cron expression, or an array of expressions. When an array is used, the reminder fires at the earliest matching time across all rules. See [Cron Expressions](#cron-expressions). |
 | `color` | string | No | Card color as hex (e.g., `"#1e3a5f"`). Uses `window.defaultColor` if not set. Button colors and text color are automatically derived from this value. |
 | `snoozeInterval` | number | No | Seconds before retrying after snooze. Overrides global `snoozeInterval`. |
 | `autoSnoozeTimeout` | number | No | Seconds before auto-dismissing the popup. Overrides global `autoSnoozeTimeout`. Set to `0` to disable. |
 
 ## Cron Expressions
 
-6-field cron syntax (seconds optional as first field):
+Both standard 5-field and 6-field (seconds first) syntax are accepted. The 6-field form is:
 
 ```
 *    *    *    *    *    *
@@ -103,11 +106,47 @@ Copy `config.example.json` to `config.json` and customize it. See `config.exampl
 
 Use [freetool.dev](https://www.freetool.dev/crontab-generator/) to build and test your cron expressions interactively.
 
+### Cron steps are not rolling intervals
+
+Cron steps match fixed values inside each field. `*/40` in the minute field means "minutes 0 and 40 of every hour", not "every 40 minutes elapsed". Because 40 does not divide 60 evenly, the gaps alternate:
+
+```
+10:00 -> 10:40 -> 11:00 -> 11:40 -> 12:00
+      40 min    20 min    40 min    20 min
+```
+
+The 6-field form `0 */40 * * * *` behaves the same; the first field only sets seconds to `0`.
+
+A single cron expression cannot represent a rolling 40-minute interval. Use one of these options:
+
+- Use a step that divides 60 evenly, such as `*/15`, `*/20`, or `*/30`.
+- Use `0,40` if an alert at `:00` and `:40` each hour is acceptable.
+- Group multiple rules in one reminder (below) for an exact 40-minute cadence.
+
+### Grouping multiple cron rules
+
+Set `cron` to an array to combine rules. The reminder fires at the earliest upcoming time from any rule and still uses one `id`, one popup, and one set of sound files:
+
+```json
+{
+  "id": "drink-water",
+  "title": "Drink water",
+  "cron": [
+    "0 0,40 0-23/2 * * *",
+    "0 20 1-23/2 * * *"
+  ]
+}
+```
+
+The first rule fires at `:00` and `:40` during even hours; the second fires at `:20` during odd hours. Together they produce an exact 40-minute cadence — `10:00 -> 10:40 -> 11:20 -> 12:00 -> 12:40...` — without duplicating the reminder or its sound files. Every expression must be valid and the array must not be empty.
+
 ### Common Examples
 
 | Cron | Description |
 |---|---|
-| `0 */40 * * * *` | Every 40 minutes |
+| `0 */20 * * * *` | Every 20 minutes |
+| `0 */30 * * * *` | Every 30 minutes |
+| `0 */40 * * * *` | At :00 and :40 of every hour (40-minute gap, then 20-minute gap; not every 40 minutes) |
 | `0 0 * * * *` | Every hour, on the hour |
 | `0 0 9,12,15,18 * * *` | At 9:00, 12:00, 15:00, and 18:00 |
 | `0 0 10,14,18 * * 1-5` | At 10:00, 14:00, 18:00 on weekdays |
@@ -165,7 +204,7 @@ You can add as many reminders as needed. Each must have a unique `id`.
     {
       "id": "drink-water",
       "title": "Drink water",
-      "cron": "0 */40 * * * *"
+      "cron": "0 */20 * * * *"
     },
     {
       "id": "stretch",
@@ -182,7 +221,7 @@ You can add as many reminders as needed. Each must have a unique `id`.
 }
 ```
 
-Each reminder runs independently with its own cron schedule and sounds.
+Each reminder runs independently with its own cron schedule and sounds. A single reminder can also combine multiple rules by setting `cron` to an array (see [Grouping multiple cron rules](#grouping-multiple-cron-rules)).
 
 Each reminder can also override the global `snoozeInterval` and `autoSnoozeTimeout`:
 
@@ -190,7 +229,7 @@ Each reminder can also override the global `snoozeInterval` and `autoSnoozeTimeo
 {
   "id": "drink-water",
   "title": "Drink water",
-  "cron": "*/40 * * * *",
+  "cron": "0 */20 * * * *",
   "snoozeInterval": 120,
   "autoSnoozeTimeout": 30
 }

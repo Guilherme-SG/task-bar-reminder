@@ -18,7 +18,7 @@ src/
   main.js              — entry point, wires all modules
   core/                — business logic (no Electron deps except main.js)
     ConfigLoader.js    — sync fs, validates config.json, converts seconds→ms
-    Scheduler.js       — cron-parser: getNextFireTime + getInterval for snooze scheduling
+    Scheduler.js       — cron-parser: getNextFireTime (string or array of rules) + getInterval for snooze scheduling
     ReminderService.js — orchestrator: queue, timers, sound, tray callbacks
     AudioPlayer.js     — spawns ffplay, Promise-based
     StateStore.js      — async fs/promises, persists next-fire-time
@@ -34,7 +34,7 @@ src/
 ## Key Conventions
 
 - **Config is seconds internally, converted to ms by ConfigLoader.** All config fields (`snoozeInterval`, `autoSnoozeTimeout`) are in seconds in JSON.
-- **Cron uses 6-field format** (with seconds as first field). Validated by `node-cron` at load time, parsed by `cron-parser` at runtime.
+- **Cron accepts 5-field or 6-field expressions** as a string or a non-empty array of strings. Arrays are unioned in `Scheduler`: the earliest next fire across all rules wins. Validated by `node-cron` at load time, parsed by `cron-parser` at runtime.
 - **Reminder `id` must be lowercase kebab-case** (`^[a-z0-9]+(?:-[a-z0-9]+)*$`). Used for sound file matching.
 - **Sound naming:** `sounds/{id}-{type}-{N}.mp3` where type is `alert`, `done`, or `snooze`.
 - **config.json is gitignored.** `config.example.json` is the reference.
