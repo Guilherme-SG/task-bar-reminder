@@ -6,6 +6,7 @@ describe('ReminderService', () => {
   let mockReminderWindow;
   let mockStateStore;
   let mockAudioPlayer;
+  let mockFocusGuard;
   let config;
 
   beforeEach(() => {
@@ -33,6 +34,10 @@ describe('ReminderService', () => {
       play: jest.fn().mockResolvedValue(undefined),
     };
 
+    mockFocusGuard = {
+      isBlocked: jest.fn().mockReturnValue(false),
+    };
+
     config = {
       reminders: [
         { id: 'water', title: 'Drink Water', cron: '*/40 * * * *' },
@@ -48,6 +53,7 @@ describe('ReminderService', () => {
       stateStore: mockStateStore,
       audioPlayer: mockAudioPlayer,
       config,
+      focusGuard: mockFocusGuard,
     });
   });
 
@@ -212,9 +218,9 @@ describe('ReminderService', () => {
     });
   });
 
-  describe('getShownReminders', () => {
-    it('returns empty array when no reminders are shown', () => {
-      expect(service.getShownReminders()).toEqual([]);
+  describe('getActiveReminders', () => {
+    it('returns empty array when no reminders are active', () => {
+      expect(service.getActiveReminders()).toEqual([]);
     });
 
     it('returns shown reminders after firing', async () => {
@@ -226,12 +232,12 @@ describe('ReminderService', () => {
 
       await service.start();
 
-      expect(service.getShownReminders()).toEqual([
-        { id: 'water', title: 'Drink Water' },
+      expect(service.getActiveReminders()).toEqual([
+        { id: 'water', title: 'Drink Water', pending: false },
       ]);
     });
 
-    it('removes reminder from shown after resolve', async () => {
+    it('removes reminder from active after resolve', async () => {
       mockStateStore.getNextFireTime
         .mockResolvedValueOnce('2020-01-01T00:00:00Z')
         .mockResolvedValueOnce(null);
@@ -239,10 +245,10 @@ describe('ReminderService', () => {
       mockAudioPlayer.pickRandom.mockReturnValue(null);
 
       await service.start();
-      expect(service.getShownReminders()).toHaveLength(1);
+      expect(service.getActiveReminders()).toHaveLength(1);
 
       service.resolveReminder('water', 'done');
-      expect(service.getShownReminders()).toHaveLength(0);
+      expect(service.getActiveReminders()).toHaveLength(0);
     });
   });
 
@@ -258,7 +264,7 @@ describe('ReminderService', () => {
       await service.start();
 
       expect(onShow).toHaveBeenCalledWith([
-        { id: 'water', title: 'Drink Water' },
+        { id: 'water', title: 'Drink Water', pending: false },
       ]);
     });
 
@@ -284,6 +290,195 @@ describe('ReminderService', () => {
       mockAudioPlayer.pickRandom.mockReturnValue(null);
 
       await expect(service.start()).resolves.not.toThrow();
+    });
+  });
+
+  describe('focus blocking', () => {
+    function configWithBlockedReminder() {
+      service.config.blockWhenFocused = ['dota2'];
+      service.config.reminders = [service.config.reminders[0]];
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockScheduler.getNextFireTime.mockImplementation(
+        () => new Date(Date.now() + 60000)
+      );
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+    }
+
+    it('defers a reminder and plays the alert sound when a blocked app is focused', async () => {
+      configWithBlockedReminder();
+      mockFocusGuard.isBlocked.mockReturnValue(true);
+      mockAudioPlayer.pickRandom.mockReturnValue('/sounds/water-alert-1.mp3');
+
+      await service.start();
+      await jest.advanceTimersByTimeAsync(60000);
+
+      expect(mockFocusGuard.isBlocked).toHaveBeenCalledWith(['dota2']);
+      expect(mockAudioPlayer.play).toHaveBeenCalledWith('/sounds/water-alert-1.mp3');
+      expect(mockReminderWindow.showReminder).not.toHaveBeenCalled();
+      expect(service.shownReminders.has('water')).toBe(false);
+      expect(service.deferredReminders.has('water')).toBe(true);
+    });
+
+    it('reports deferred reminders as pending to the tray', async () => {
+      configWithBlockedReminder();
+      mockFocusGuard.isBlocked.mockReturnValue(true);
+      const onShow = jest.fn();
+      service.onShow = onShow;
+
+      await service.start();
+      await jest.advanceTimersByTimeAsync(60000);
+
+      expect(onShow).toHaveBeenCalledWith([
+        { id: 'water', title: 'Drink Water', pending: true },
+      ]);
+    });
+
+    it('uses a per-reminder list over the global list', async () => {
+      configWithBlockedReminder();
+      service.config.reminders[0].blockWhenFocused = ['eldenring'];
+
+      await service.start();
+      await jest.advanceTimersByTimeAsync(60000);
+
+      expect(mockFocusGuard.isBlocked).toHaveBeenCalledWith(['eldenring']);
+      expect(mockReminderWindow.showReminder).toHaveBeenCalled();
+    });
+
+    it('always shows when the per-reminder list is empty', async () => {
+      configWithBlockedReminder();
+      service.config.reminders[0].blockWhenFocused = [];
+      mockFocusGuard.isBlocked.mockReturnValue(true);
+
+      await service.start();
+      await jest.advanceTimersByTimeAsync(60000);
+
+      expect(mockFocusGuard.isBlocked).not.toHaveBeenCalled();
+      expect(mockReminderWindow.showReminder).toHaveBeenCalled();
+      expect(service.deferredReminders.has('water')).toBe(false);
+    });
+
+    it('shows deferred reminders when focus clears', async () => {
+      configWithBlockedReminder();
+      mockFocusGuard.isBlocked.mockReturnValueOnce(true).mockReturnValue(false);
+
+      await service.start();
+      await jest.advanceTimersByTimeAsync(60000);
+      expect(service.deferredReminders.has('water')).toBe(true);
+
+      service.releaseDeferredReminders();
+
+      expect(service.deferredReminders.has('water')).toBe(false);
+      expect(service.shownReminders.has('water')).toBe(true);
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'water' }),
+        expect.any(Number)
+      );
+      expect(service.autoDismissTimers.has('water')).toBe(true);
+    });
+
+    it('keeps deferred reminders while the app is still focused', async () => {
+      configWithBlockedReminder();
+      mockFocusGuard.isBlocked.mockReturnValue(true);
+
+      await service.start();
+      await jest.advanceTimersByTimeAsync(60000);
+
+      service.releaseDeferredReminders();
+
+      expect(service.deferredReminders.has('water')).toBe(true);
+      expect(mockReminderWindow.showReminder).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when nothing is deferred', () => {
+      service.releaseDeferredReminders();
+
+      expect(mockReminderWindow.showReminder).not.toHaveBeenCalled();
+    });
+
+    it('does not replay the alert sound when releasing', async () => {
+      configWithBlockedReminder();
+      mockFocusGuard.isBlocked.mockReturnValueOnce(true).mockReturnValue(false);
+      mockAudioPlayer.pickRandom.mockReturnValue('/sounds/water-alert-1.mp3');
+
+      await service.start();
+      await jest.advanceTimersByTimeAsync(60000);
+
+      service.releaseDeferredReminders();
+
+      expect(mockAudioPlayer.play).toHaveBeenCalledTimes(1);
+    });
+
+    it('releases only reminders whose block list no longer matches', async () => {
+      service.config.blockWhenFocused = [];
+      service.config.reminders = [
+        { id: 'water', title: 'Drink Water', cron: '*/40 * * * *', blockWhenFocused: ['dota2'] },
+        { id: 'break', title: 'Take Break', cron: '0 10 * * *', blockWhenFocused: ['eldenring'] },
+      ];
+      mockFocusGuard.isBlocked.mockReturnValue(true);
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+      await jest.advanceTimersByTimeAsync(60000);
+      expect(service.deferredReminders.size).toBe(2);
+
+      mockFocusGuard.isBlocked.mockImplementation((apps) => apps.includes('eldenring'));
+      service.releaseDeferredReminders();
+
+      expect(service.deferredReminders.has('water')).toBe(false);
+      expect(service.deferredReminders.has('break')).toBe(true);
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledTimes(1);
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'water' }),
+        expect.any(Number)
+      );
+    });
+
+    it('deduplicates repeated fires while still blocked', async () => {
+      configWithBlockedReminder();
+      mockFocusGuard.isBlocked.mockReturnValue(true);
+      mockAudioPlayer.pickRandom.mockReturnValue('/sounds/water-alert-1.mp3');
+
+      await service.start();
+      await jest.advanceTimersByTimeAsync(60000);
+      await jest.advanceTimersByTimeAsync(60000);
+
+      expect(service.deferredReminders.size).toBe(1);
+      expect(mockAudioPlayer.play).toHaveBeenCalledTimes(2);
+      expect(mockReminderWindow.showReminder).not.toHaveBeenCalled();
+    });
+
+    it('does not mark an already shown reminder as pending', async () => {
+      configWithBlockedReminder();
+      service.config.reminders[0].autoSnoozeTimeout = 0;
+      mockFocusGuard.isBlocked.mockReturnValueOnce(false).mockReturnValue(true);
+
+      await service.start();
+      await jest.advanceTimersByTimeAsync(60000);
+      expect(service.shownReminders.has('water')).toBe(true);
+
+      await jest.advanceTimersByTimeAsync(60000);
+
+      expect(service.deferredReminders.has('water')).toBe(true);
+      expect(service.getActiveReminders()).toEqual([
+        { id: 'water', title: 'Drink Water', pending: false },
+      ]);
+    });
+
+    it('removes a pending reminder when resolved from the tray', async () => {
+      configWithBlockedReminder();
+      mockFocusGuard.isBlocked.mockReturnValue(true);
+
+      await service.start();
+      await jest.advanceTimersByTimeAsync(60000);
+      expect(service.deferredReminders.has('water')).toBe(true);
+
+      service.resolveReminder('water', 'done');
+
+      expect(service.deferredReminders.has('water')).toBe(false);
+      expect(service.shownReminders.has('water')).toBe(false);
+      expect(mockReminderWindow.removeReminder).toHaveBeenCalledWith('water');
     });
   });
 

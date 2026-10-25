@@ -20,6 +20,7 @@ src/
     ConfigLoader.js    — sync fs, validates config.json, converts seconds→ms
     Scheduler.js       — cron-parser: getNextFireTime (string or array of rules) + getInterval for snooze scheduling
     ReminderService.js — orchestrator: queue, timers, sound, tray callbacks
+    FocusGuard.js      — Windows foreground-app watcher (PowerShell), defers popups
     AudioPlayer.js     — spawns ffplay, Promise-based
     StateStore.js      — async fs/promises, persists next-fire-time
   ui/                  — Electron UI
@@ -37,6 +38,8 @@ src/
 - **Cron accepts 5-field or 6-field expressions** as a string or a non-empty array of strings. Arrays are unioned in `Scheduler`: the earliest next fire across all rules wins. Validated by `node-cron` at load time, parsed by `cron-parser` at runtime.
 - **Reminder `id` must be lowercase kebab-case** (`^[a-z0-9]+(?:-[a-z0-9]+)*$`). Used for sound file matching.
 - **Sound naming:** `sounds/{id}-{type}-{N}.mp3` where type is `alert`, `done`, or `snooze`.
+- **`blockWhenFocused`** accepts an array of process names, globally or per reminder. A per-reminder list replaces the global one; `[]` disables blocking for that reminder. Matching is case-insensitive and ignores a trailing `.exe`.
+- **`FocusGuard` uses a hidden PowerShell helper** (Windows-only) that reports foreground process changes. It starts only when an effective block list is non-empty, ignores its own process, fails open, and is stopped on app quit. Alert sounds still play when a popup is deferred; deferred popups are released on focus change and marked `(pending)` in the tray.
 - **config.json is gitignored.** `config.example.json` is the reference.
 - **`window.show()` is used, not `showInactive()`** — required for the window to appear over fullscreen apps.
 - **`escapeHtml()` in reminder.html** — title and description are sanitized before innerHTML injection.
@@ -45,6 +48,7 @@ src/
 
 - 100% coverage enforced globally (statements, branches, functions, lines). Tests will fail if coverage drops.
 - Electron is fully mocked in tests — no real windows spawn.
+- FocusGuard tests inject a fake `spawn` and stream names through a `PassThrough`; no PowerShell runs in tests.
 - `jest.useFakeTimers()` is used extensively in ReminderService tests. Use `jest.advanceTimersByTimeAsync()` for async timer flows.
 - Test files mirror source: `src/core/X.js` → `tests/core/X.test.js`.
 

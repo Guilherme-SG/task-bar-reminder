@@ -2,6 +2,7 @@
   "ffplayPath": "",
   "autoSnoozeTimeout": 60,
   "snoozeInterval": 300,
+  "blockWhenFocused": ["dota2", "eldenring"],
   "window": {
     "width": 320,
     "height": 220,
@@ -13,7 +14,8 @@
       "title": "Add your first reminder",
       "description": "Configure your reminders in the config.json file",
       "cron": "* * * * *",
-      "color": "#2e3a5f"
+      "color": "#2e3a5f",
+      "blockWhenFocused": []
     },
     {
       "id": "drink-water",

@@ -10,6 +10,7 @@ const DEFAULTS = {
   ffplayPath: '',
   autoSnoozeTimeout: 60,
   snoozeInterval: 300,
+  blockWhenFocused: [],
   window: { width: 320, height: 220, defaultColor: '#1a1a2e' },
 };
 
@@ -92,6 +93,10 @@ class ConfigLoader {
       if (reminder.autoSnoozeTimeout !== undefined && (typeof reminder.autoSnoozeTimeout !== 'number' || reminder.autoSnoozeTimeout < 0)) {
         throw new Error(`Reminder "${reminder.id}" autoSnoozeTimeout must be a non-negative number`);
       }
+
+      if (reminder.blockWhenFocused !== undefined && !ConfigLoader.#isStringList(reminder.blockWhenFocused)) {
+        throw new Error(`Reminder "${reminder.id}" blockWhenFocused must be an array of non-empty strings`);
+      }
     }
 
     if (config.window.defaultColor !== undefined && !ConfigLoader.#isValidHex(config.window.defaultColor)) {
@@ -104,6 +109,10 @@ class ConfigLoader {
 
     if (typeof config.snoozeInterval !== 'number' || config.snoozeInterval < 0) {
       throw new Error('"snoozeInterval" must be a non-negative number');
+    }
+
+    if (!ConfigLoader.#isStringList(config.blockWhenFocused)) {
+      throw new Error('"blockWhenFocused" must be an array of non-empty strings');
     }
   }
 
@@ -139,6 +148,13 @@ class ConfigLoader {
 
   static #isValidHex(str) {
     return typeof str === 'string' && /^#[0-9a-fA-F]{6}$/.test(str);
+  }
+
+  static #isStringList(value) {
+    return (
+      Array.isArray(value) &&
+      value.every((entry) => typeof entry === 'string' && entry.trim().length > 0)
+    );
   }
 }
 

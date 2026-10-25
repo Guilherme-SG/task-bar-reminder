@@ -72,7 +72,7 @@ describe('AppTray', () => {
     it('shows Done and Snooze for active reminders', () => {
       tray.updateMenu(
         [{ id: 'water', title: 'Drink Water' }],
-        ['water']
+        [{ id: 'water', pending: false }]
       );
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
@@ -90,7 +90,7 @@ describe('AppTray', () => {
           { id: 'water', title: 'Drink Water' },
           { id: 'break', title: 'Take Break' },
         ],
-        ['water']
+        [{ id: 'water', pending: false }]
       );
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
@@ -101,13 +101,25 @@ describe('AppTray', () => {
       expect(call[4].label).toBe('Exit');
     });
 
+    it('marks pending reminders in the labels', () => {
+      tray.updateMenu(
+        [{ id: 'water', title: 'Drink Water' }],
+        [{ id: 'water', pending: true }]
+      );
+
+      const call = Menu.buildFromTemplate.mock.calls[0][0];
+      expect(call).toHaveLength(5);
+      expect(call[0].label).toBe('Done - "Drink Water" (pending)');
+      expect(call[1].label).toBe('Snooze - "Drink Water" (pending)');
+    });
+
     it('calls onAction with done when Done is clicked', () => {
       const cb = jest.fn();
       tray.setOnAction(cb);
 
       tray.updateMenu(
         [{ id: 'water', title: 'Drink Water' }],
-        ['water']
+        [{ id: 'water', pending: false }]
       );
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
@@ -122,7 +134,7 @@ describe('AppTray', () => {
 
       tray.updateMenu(
         [{ id: 'water', title: 'Drink Water' }],
-        ['water']
+        [{ id: 'water', pending: false }]
       );
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
@@ -134,7 +146,7 @@ describe('AppTray', () => {
     it('does not throw when onAction is not set', () => {
       tray.updateMenu(
         [{ id: 'water', title: 'Drink Water' }],
-        ['water']
+        [{ id: 'water', pending: false }]
       );
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
@@ -162,7 +174,7 @@ describe('AppTray', () => {
 
       expect(app.quit).toHaveBeenCalled();
     });
-    it('defaults activeIds to empty when not provided', () => {
+    it('defaults activeReminders to empty when not provided', () => {
       tray.updateMenu([{ id: 'water', title: 'Drink Water' }]);
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];

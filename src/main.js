@@ -3,6 +3,7 @@ const ConfigLoader = require('./core/ConfigLoader.js');
 const Scheduler = require('./core/Scheduler.js');
 const AudioPlayer = require('./core/AudioPlayer.js');
 const StateStore = require('./core/StateStore.js');
+const FocusGuard = require('./core/FocusGuard.js');
 const ReminderService = require('./core/ReminderService.js');
 const ReminderWindow = require('./ui/ReminderWindow.js');
 const AppTray = require('./ui/Tray.js');
@@ -31,6 +32,11 @@ app.whenReady().then(async () => {
   const stateStore = new StateStore();
   const reminderWindow = new ReminderWindow(config);
   const tray = new AppTray();
+  const focusGuard = new FocusGuard();
+
+  const needsFocusGuard = config.reminders.some(
+    (reminder) => (reminder.blockWhenFocused ?? config.blockWhenFocused).length > 0
+  );
 
   reminderService = new ReminderService({
     scheduler,
@@ -38,6 +44,19 @@ app.whenReady().then(async () => {
     stateStore,
     audioPlayer,
     config,
+    focusGuard,
+  });
+
+  focusGuard.setOnChange(() => {
+    reminderService.releaseDeferredReminders();
+  });
+
+  if (needsFocusGuard) {
+    focusGuard.start();
+  }
+
+  app.on('will-quit', () => {
+    focusGuard.stop();
   });
 
   reminderWindow.setOnAction((reminderId, action) => {
@@ -62,9 +81,8 @@ app.whenReady().then(async () => {
     reminderService.resolveReminder(reminderId, action);
   });
 
-  const updateTray = (shownReminders) => {
-    const activeIds = shownReminders.map((r) => r.id);
-    tray.updateMenu(config.reminders, activeIds);
+  const updateTray = (activeReminders) => {
+    tray.updateMenu(config.reminders, activeReminders);
   };
 
   reminderService.onShow = updateTray;

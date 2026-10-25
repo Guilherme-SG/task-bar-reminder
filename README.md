@@ -43,6 +43,7 @@ Copy `config.example.json` to `config.json` and customize it. See `config.exampl
   "ffplayPath": "C:\\ffmpeg\\bin\\ffplay.exe",
   "autoSnoozeTimeout": 60,
   "snoozeInterval": 300,
+  "blockWhenFocused": ["dota2", "eldenring"],
   "window": {
     "width": 320,
     "height": 220,
@@ -72,6 +73,7 @@ Copy `config.example.json` to `config.json` and customize it. See `config.exampl
 | `ffplayPath` | string | `""` | Full path to `ffplay.exe`. Leave empty to skip audio. |
 | `autoSnoozeTimeout` | number | `60` | Seconds before auto-dismissing a popup (1 min). |
 | `snoozeInterval` | number | `300` | Seconds before retrying after snooze (5 min). |
+| `blockWhenFocused` | array of strings | `[]` | Process names that defer popups while focused (Windows only). See [Focus Blocking](#focus-blocking). |
 | `window.width` | number | `320` | Popup window width. |
 | `window.height` | number | `220` | Popup window height. |
 | `window.defaultColor` | string | `"#1a1a2e"` | Default card color (hex). Used when reminder has no `color`. |
@@ -88,6 +90,7 @@ Copy `config.example.json` to `config.json` and customize it. See `config.exampl
 | `color` | string | No | Card color as hex (e.g., `"#1e3a5f"`). Uses `window.defaultColor` if not set. Button colors and text color are automatically derived from this value. |
 | `snoozeInterval` | number | No | Seconds before retrying after snooze. Overrides global `snoozeInterval`. |
 | `autoSnoozeTimeout` | number | No | Seconds before auto-dismissing the popup. Overrides global `autoSnoozeTimeout`. Set to `0` to disable. |
+| `blockWhenFocused` | array of strings | No | Overrides the global `blockWhenFocused` for this reminder. `[]` always shows this reminder, even while a blocked app is focused. |
 
 ## Cron Expressions
 
@@ -235,13 +238,55 @@ Each reminder can also override the global `snoozeInterval` and `autoSnoozeTimeo
 }
 ```
 
+## Focus Blocking
+
+You can defer popups while a game (or any other app) is focused, without losing the alert sound. Add the app's process name to `blockWhenFocused`:
+
+```json
+{
+  "blockWhenFocused": ["dota2", "DarkSoulsIII"],
+  "reminders": [
+    {
+      "id": "drink-water",
+      "title": "Drink water",
+      "cron": "0 */20 * * * *"
+    }
+  ]
+}
+```
+
+How it works:
+
+- Every scheduled alert still plays its sound, even while a blocked app is focused.
+- The popup is deferred, not discarded. It appears when the blocked app loses focus.
+- If the reminder fires again while it is still deferred, only one popup is kept. The sound still plays for each occurrence.
+- The sound is not replayed when the deferred popup appears.
+- The auto-dismiss countdown starts when the popup appears, not while it is deferred.
+- Pending reminders appear in the tray menu marked `(pending)`, where Done/Snooze still work.
+- Deferred reminders are not persisted across app restarts.
+
+Matching is by **process name only**, case-insensitive, and the `.exe` suffix is optional: `dota2`, `dota2.exe`, and `DOTA2` all match. Common examples: Dota 2 → `dota2`, Dark Souls III → `DarkSoulsIII`, Elden Ring → `eldenring`. To find an app's process name, open Task Manager → **Details** and look at the **Name** column (ignore the `.exe` suffix).
+
+A reminder can override the global list. Use `[]` to always show that reminder:
+
+```json
+{
+  "id": "important",
+  "title": "Important reminder",
+  "cron": "0 0 9 * * *",
+  "blockWhenFocused": []
+}
+```
+
+> **Notes:** This feature is Windows-only; on other platforms popups always show. While the app is running with a non-empty block list, a hidden PowerShell helper monitors the foreground process (roughly once per second). If foreground detection fails, popups fail open and show normally.
+
 ## System Tray
 
 The app runs in the system tray. Right-click the tray icon to access the menu:
 
 | Item | Description |
 |---|---|
-| **Done - "{title}"** | Dismisses the reminder (shown only when active). |
-| **Snooze - "{title}"** | Snoozes the reminder for `snoozeInterval` seconds (shown only when active). |
+| **Done - "{title}"** | Dismisses the reminder (shown when active or pending). |
+| **Snooze - "{title}"** | Snoozes the reminder for `snoozeInterval` seconds (shown when active or pending). Deferred items are marked `(pending)`. |
 | **Restart** | Restarts the app to reload `config.json`. |
 | **Exit** | Quits the application. |

@@ -33,6 +33,7 @@ describe('ConfigLoader', () => {
       expect(config.ffplayPath).toBe('');
       expect(config.autoSnoozeTimeout).toBe(60000);
       expect(config.snoozeInterval).toBe(300000);
+      expect(config.blockWhenFocused).toEqual([]);
       expect(config.window).toEqual({ width: 320, height: 220, defaultColor: '#1a1a2e' });
     });
 
@@ -454,6 +455,85 @@ describe('ConfigLoader', () => {
       });
 
       expect(() => ConfigLoader.load()).toThrow('autoSnoozeTimeout must be a non-negative number');
+    });
+
+    it('accepts a global blockWhenFocused list', () => {
+      writeConfig({
+        blockWhenFocused: ['dota2', 'DarkSoulsIII.exe'],
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *' }],
+      });
+
+      const config = ConfigLoader.load();
+      expect(config.blockWhenFocused).toEqual(['dota2', 'DarkSoulsIII.exe']);
+    });
+
+    it('throws when blockWhenFocused is not an array', () => {
+      writeConfig({
+        blockWhenFocused: 'dota2',
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *' }],
+      });
+
+      expect(() => ConfigLoader.load()).toThrow('"blockWhenFocused" must be an array of non-empty strings');
+    });
+
+    it('throws when blockWhenFocused contains a non-string', () => {
+      writeConfig({
+        blockWhenFocused: ['dota2', 123],
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *' }],
+      });
+
+      expect(() => ConfigLoader.load()).toThrow('"blockWhenFocused" must be an array of non-empty strings');
+    });
+
+    it('throws when blockWhenFocused contains an empty string', () => {
+      writeConfig({
+        blockWhenFocused: ['  '],
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *' }],
+      });
+
+      expect(() => ConfigLoader.load()).toThrow('"blockWhenFocused" must be an array of non-empty strings');
+    });
+
+    it('accepts a per-reminder blockWhenFocused list', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', blockWhenFocused: ['dota2'] }],
+      });
+
+      const config = ConfigLoader.load();
+      expect(config.reminders[0].blockWhenFocused).toEqual(['dota2']);
+    });
+
+    it('accepts an empty per-reminder blockWhenFocused list', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', blockWhenFocused: [] }],
+      });
+
+      const config = ConfigLoader.load();
+      expect(config.reminders[0].blockWhenFocused).toEqual([]);
+    });
+
+    it('throws when per-reminder blockWhenFocused is not an array', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', blockWhenFocused: 'dota2' }],
+      });
+
+      expect(() => ConfigLoader.load()).toThrow('Reminder "a" blockWhenFocused must be an array of non-empty strings');
+    });
+
+    it('throws when per-reminder blockWhenFocused contains a non-string', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', blockWhenFocused: [123] }],
+      });
+
+      expect(() => ConfigLoader.load()).toThrow('Reminder "a" blockWhenFocused must be an array of non-empty strings');
+    });
+
+    it('throws when per-reminder blockWhenFocused contains an empty string', () => {
+      writeConfig({
+        reminders: [{ id: 'a', title: 'A', cron: '0 * * * *', blockWhenFocused: [''] }],
+      });
+
+      expect(() => ConfigLoader.load()).toThrow('Reminder "a" blockWhenFocused must be an array of non-empty strings');
     });
   });
 });

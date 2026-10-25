@@ -22,13 +22,16 @@ class AppTray {
     this.onAction = callback;
   }
 
-  updateMenu(reminders, activeIds = []) {
+  updateMenu(reminders, activeReminders = []) {
     const items = [];
+    const activeById = new Map(activeReminders.map((r) => [r.id, r]));
 
     for (const r of reminders) {
-      if (activeIds.includes(r.id)) {
+      const active = activeById.get(r.id);
+      if (active) {
+        const suffix = active.pending ? ' (pending)' : '';
         items.push({
-          label: `Done - "${r.title}"`,
+          label: `Done - "${r.title}"${suffix}`,
           click: () => {
             if (this.onAction) {
               this.onAction(r.id, 'done');
@@ -36,7 +39,7 @@ class AppTray {
           },
         });
         items.push({
-          label: `Snooze - "${r.title}"`,
+          label: `Snooze - "${r.title}"${suffix}`,
           click: () => {
             if (this.onAction) {
               this.onAction(r.id, 'snooze');

@@ -1,16 +1,18 @@
 const { REMINDER_ACTIONS, TIMEOUT_KEY_PREFIX } = require('../utils/constants.js');
 
 class ReminderService {
-  constructor({ scheduler, reminderWindow, stateStore, audioPlayer, config }) {
+  constructor({ scheduler, reminderWindow, stateStore, audioPlayer, config, focusGuard }) {
     this.scheduler = scheduler;
     this.reminderWindow = reminderWindow;
     this.stateStore = stateStore;
     this.audioPlayer = audioPlayer;
     this.config = config;
+    this.focusGuard = focusGuard;
 
     this.queue = [];
     this.activeReminders = new Map();
     this.shownReminders = new Set();
+    this.deferredReminders = new Map();
     this.autoDismissTimers = new Map();
     this.onShow = null;
     this.onDismiss = null;
@@ -22,6 +24,10 @@ class ReminderService {
 
   #getAutoSnoozeTimeout(reminder) {
     return reminder.autoSnoozeTimeout ?? this.config.autoSnoozeTimeout;
+  }
+
+  #getBlockApps(reminder) {
+    return reminder.blockWhenFocused ?? this.config.blockWhenFocused ?? [];
   }
 
   async start() {
@@ -133,11 +139,33 @@ class ReminderService {
 
       this.#playSound(reminder, 'alert');
 
-      this.shownReminders.add(reminder.id);
-      if (this.onShow) this.onShow(this.getShownReminders());
+      const blockApps = this.#getBlockApps(reminder);
+      if (blockApps.length > 0 && this.focusGuard.isBlocked(blockApps)) {
+        this.deferredReminders.set(reminder.id, reminder);
+        if (this.onShow) this.onShow(this.getActiveReminders());
+        continue;
+      }
 
-      this.reminderWindow.showReminder(reminder, this.queue.length);
-      this.#startAutoDismiss(reminder);
+      this.#showReminder(reminder);
+    }
+  }
+
+  #showReminder(reminder) {
+    this.shownReminders.add(reminder.id);
+    if (this.onShow) this.onShow(this.getActiveReminders());
+
+    this.reminderWindow.showReminder(reminder, this.queue.length);
+    this.#startAutoDismiss(reminder);
+  }
+
+  releaseDeferredReminders() {
+    if (this.deferredReminders.size === 0) return;
+
+    for (const [reminderId, reminder] of this.deferredReminders) {
+      if (this.focusGuard.isBlocked(this.#getBlockApps(reminder))) continue;
+
+      this.deferredReminders.delete(reminderId);
+      this.#showReminder(reminder);
     }
   }
 
@@ -147,7 +175,8 @@ class ReminderService {
 
     this.#cancelAutoDismiss(reminderId);
     this.shownReminders.delete(reminderId);
-    if (this.onDismiss) this.onDismiss(this.getShownReminders());
+    this.deferredReminders.delete(reminderId);
+    if (this.onDismiss) this.onDismiss(this.getActiveReminders());
 
     this.reminderWindow.removeReminder(reminderId);
 
@@ -161,10 +190,14 @@ class ReminderService {
     }
   }
 
-  getShownReminders() {
+  getActiveReminders() {
     return this.config.reminders
-      .filter((r) => this.shownReminders.has(r.id))
-      .map((r) => ({ id: r.id, title: r.title }));
+      .filter((r) => this.shownReminders.has(r.id) || this.deferredReminders.has(r.id))
+      .map((r) => ({
+        id: r.id,
+        title: r.title,
+        pending: this.deferredReminders.has(r.id) && !this.shownReminders.has(r.id),
+      }));
   }
 }
 
