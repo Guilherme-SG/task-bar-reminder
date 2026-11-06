@@ -627,4 +627,122 @@ describe('ConfigLoader', () => {
       ).not.toThrow();
     });
   });
+
+  describe('updateReminder', () => {
+    it('throws if config file not found', () => {
+      fs.existsSync.mockReturnValue(false);
+
+      expect(() => ConfigLoader.updateReminder('water', { title: 'Updated' })).toThrow(
+        'Config file not found'
+      );
+    });
+
+    it('throws if config file has invalid JSON', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue('invalid json');
+
+      expect(() => ConfigLoader.updateReminder('water', { title: 'Updated' })).toThrow(
+        'Invalid JSON in config file'
+      );
+    });
+
+    it('throws if reminders array is missing or not array', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify({}));
+
+      expect(() => ConfigLoader.updateReminder('water', { title: 'Updated' })).toThrow(
+        'Reminder with id "water" not found'
+      );
+    });
+
+    it('throws if reminder id is not found in reminders', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify({ reminders: [{ id: 'other', title: 'Other', cron: '* * * * *' }] }));
+
+      expect(() => ConfigLoader.updateReminder('water', { title: 'Updated' })).toThrow(
+        'Reminder with id "water" not found'
+      );
+    });
+
+    it('updates reminder, validates without self-duplicate collision, and writes to file', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(
+        JSON.stringify({
+          reminders: [
+            { id: 'water', title: 'Drink Water', cron: '*/30 * * * *' },
+            { id: 'stretch', title: 'Stretch', cron: '0 * * * *' },
+          ],
+        })
+      );
+
+      const updated = ConfigLoader.updateReminder('water', {
+        title: 'Drink Cold Water',
+        cron: '*/45 * * * *',
+        snoozeInterval: 60,
+        autoSnoozeTimeout: 10,
+        blockWhenFocused: 'dota2',
+      });
+
+      expect(fs.writeFileSync).toHaveBeenCalled();
+      const written = JSON.parse(fs.writeFileSync.mock.calls[0][1]);
+      expect(written.reminders[0].title).toBe('Drink Cold Water');
+      expect(written.reminders[0].cron).toBe('*/45 * * * *');
+      expect(written.reminders[0].blockWhenFocused).toEqual(['dota2']);
+      expect(updated.snoozeInterval).toBe(60000);
+      expect(updated.autoSnoozeTimeout).toBe(10000);
+    });
+  });
+
+  describe('deleteReminder', () => {
+    it('throws if config file not found', () => {
+      fs.existsSync.mockReturnValue(false);
+
+      expect(() => ConfigLoader.deleteReminder('water')).toThrow('Config file not found');
+    });
+
+    it('throws if config file has invalid JSON', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue('invalid json');
+
+      expect(() => ConfigLoader.deleteReminder('water')).toThrow('Invalid JSON in config file');
+    });
+
+    it('throws if reminders array is missing', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify({}));
+
+      expect(() => ConfigLoader.deleteReminder('water')).toThrow(
+        'Reminder with id "water" not found'
+      );
+    });
+
+    it('throws if reminder id is not found', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify({ reminders: [{ id: 'other', title: 'Other', cron: '* * * * *' }] }));
+
+      expect(() => ConfigLoader.deleteReminder('water')).toThrow(
+        'Reminder with id "water" not found'
+      );
+    });
+
+    it('deletes reminder and writes back to file', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(
+        JSON.stringify({
+          reminders: [
+            { id: 'water', title: 'Drink Water', cron: '*/30 * * * *' },
+            { id: 'stretch', title: 'Stretch', cron: '0 * * * *' },
+          ],
+        })
+      );
+
+      const deletedId = ConfigLoader.deleteReminder('water');
+
+      expect(deletedId).toBe('water');
+      expect(fs.writeFileSync).toHaveBeenCalled();
+      const written = JSON.parse(fs.writeFileSync.mock.calls[0][1]);
+      expect(written.reminders).toHaveLength(1);
+      expect(written.reminders[0].id).toBe('stretch');
+    });
+  });
 });

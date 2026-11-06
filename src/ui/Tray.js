@@ -8,6 +8,8 @@ class AppTray {
     this.onQuit = null;
     this.onRestart = null;
     this.onAddReminder = null;
+    this.onManageReminders = null;
+    this.onOpenSounds = null;
   }
 
   create() {
@@ -59,6 +61,24 @@ class AppTray {
       click: () => {
         if (this.onAddReminder) {
           this.onAddReminder();
+        }
+      },
+    });
+
+    items.push({
+      label: 'Manage reminders',
+      click: () => {
+        if (this.onManageReminders) {
+          this.onManageReminders();
+        }
+      },
+    });
+
+    items.push({
+      label: 'Open sounds folder',
+      click: () => {
+        if (this.onOpenSounds) {
+          this.onOpenSounds();
         }
       },
     });

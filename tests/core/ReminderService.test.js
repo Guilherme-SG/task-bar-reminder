@@ -27,6 +27,7 @@ describe('ReminderService', () => {
     mockStateStore = {
       getNextFireTime: jest.fn(),
       setNextFireTime: jest.fn().mockResolvedValue(undefined),
+      clearNextFireTime: jest.fn().mockResolvedValue(undefined),
     };
 
     mockAudioPlayer = {
@@ -737,6 +738,97 @@ describe('ReminderService', () => {
       };
 
       await expect(service.addReminder(newReminder)).resolves.not.toThrow();
+    });
+  });
+
+  describe('updateReminder', () => {
+    it('does nothing when reminder id not found', async () => {
+      await expect(service.updateReminder('unknown', { title: 'Unknown' })).resolves.not.toThrow();
+      expect(mockScheduler.getNextFireTime).not.toHaveBeenCalled();
+    });
+
+    it('clears old timers, updates config, and reschedules reminder', async () => {
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+
+      await service.start();
+
+      const updated = {
+        id: 'water',
+        title: 'Drink Cold Water',
+        cron: '0 * * * *',
+        blockWhenFocused: ['game'],
+      };
+
+      await service.updateReminder('water', updated);
+
+      expect(service.config.reminders[0].title).toBe('Drink Cold Water');
+      expect(mockFocusGuard.start).toHaveBeenCalled();
+      expect(mockStateStore.setNextFireTime).toHaveBeenCalledWith('water', expect.any(String));
+    });
+
+    it('updates reminder when active timer is not running and blockWhenFocused is empty', async () => {
+      mockStateStore.getNextFireTime.mockResolvedValue('2020-01-01T00:00:00Z');
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      const updated = {
+        id: 'water',
+        title: 'Drink Water Updated',
+        cron: '0 * * * *',
+      };
+
+      await service.updateReminder('water', updated);
+      expect(service.config.reminders[0].title).toBe('Drink Water Updated');
+    });
+  });
+
+  describe('deleteReminder', () => {
+    it('does nothing when reminder id not found', async () => {
+      await expect(service.deleteReminder('unknown')).resolves.not.toThrow();
+      expect(mockStateStore.clearNextFireTime).not.toHaveBeenCalled();
+    });
+
+    it('deletes reminder when active timer is not running', async () => {
+      await service.deleteReminder('water');
+      expect(service.config.reminders.find((r) => r.id === 'water')).toBeUndefined();
+    });
+
+    it('clears timers, removes from all collections, and clears state', async () => {
+      mockStateStore.getNextFireTime.mockImplementation(async (id) =>
+        id === 'water' ? '2020-01-01T00:00:00Z' : null
+      );
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+
+      expect(service.shownReminders.has('water')).toBe(true);
+
+      service.queue = [{ id: 'water' }, { id: 'break' }];
+
+      await service.deleteReminder('water');
+
+      expect(service.queue).toEqual([{ id: 'break' }]);
+      expect(service.shownReminders.has('water')).toBe(false);
+      expect(service.config.reminders.find((r) => r.id === 'water')).toBeUndefined();
+      expect(mockReminderWindow.removeReminder).toHaveBeenCalledWith('water');
+      expect(mockReminderWindow.hide).toHaveBeenCalled();
+      expect(mockStateStore.clearNextFireTime).toHaveBeenCalledWith('water');
+    });
+
+    it('does not hide window on delete if other reminders are still shown', async () => {
+      mockStateStore.getNextFireTime.mockResolvedValue('2020-01-01T00:00:00Z');
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+
+      expect(service.shownReminders.size).toBe(2);
+
+      await service.deleteReminder('water');
+
+      expect(mockReminderWindow.hide).not.toHaveBeenCalled();
     });
   });
 });

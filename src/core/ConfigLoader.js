@@ -120,6 +120,38 @@ class ConfigLoader {
     }
   }
 
+  static #normalizeReminder(rawReminder) {
+    const reminder = { ...rawReminder };
+    if (typeof reminder.blockWhenFocused === 'string') {
+      reminder.blockWhenFocused = reminder.blockWhenFocused
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+    }
+
+    if (reminder.description === '') delete reminder.description;
+    if (reminder.color === '') delete reminder.color;
+    if (reminder.snoozeInterval === '' || reminder.snoozeInterval === null) {
+      delete reminder.snoozeInterval;
+    }
+    if (reminder.autoSnoozeTimeout === '' || reminder.autoSnoozeTimeout === null) {
+      delete reminder.autoSnoozeTimeout;
+    }
+
+    return reminder;
+  }
+
+  static #toRuntimeReminder(reminder) {
+    const runtime = { ...reminder };
+    if (runtime.snoozeInterval !== undefined) {
+      runtime.snoozeInterval *= SECONDS_TO_MS;
+    }
+    if (runtime.autoSnoozeTimeout !== undefined) {
+      runtime.autoSnoozeTimeout *= SECONDS_TO_MS;
+    }
+    return runtime;
+  }
+
   static saveReminder(newReminder, filePath = CONFIG_PATH) {
     if (!fs.existsSync(filePath)) {
       throw new Error(`Config file not found: ${filePath}`);
@@ -138,38 +170,79 @@ class ConfigLoader {
     }
 
     const existingIds = new Set(raw.reminders.map((r) => r.id));
-
-    const reminderToSave = { ...newReminder };
-    if (typeof reminderToSave.blockWhenFocused === 'string') {
-      reminderToSave.blockWhenFocused = reminderToSave.blockWhenFocused
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
-    }
-
-    if (reminderToSave.description === '') delete reminderToSave.description;
-    if (reminderToSave.color === '') delete reminderToSave.color;
-    if (reminderToSave.snoozeInterval === '' || reminderToSave.snoozeInterval === null) {
-      delete reminderToSave.snoozeInterval;
-    }
-    if (reminderToSave.autoSnoozeTimeout === '' || reminderToSave.autoSnoozeTimeout === null) {
-      delete reminderToSave.autoSnoozeTimeout;
-    }
+    const reminderToSave = ConfigLoader.#normalizeReminder(newReminder);
 
     ConfigLoader.validateReminder(reminderToSave, existingIds);
 
     raw.reminders.push(reminderToSave);
     fs.writeFileSync(filePath, JSON.stringify(raw, null, 2), 'utf8');
 
-    const runtimeReminder = { ...reminderToSave };
-    if (runtimeReminder.snoozeInterval !== undefined) {
-      runtimeReminder.snoozeInterval *= SECONDS_TO_MS;
-    }
-    if (runtimeReminder.autoSnoozeTimeout !== undefined) {
-      runtimeReminder.autoSnoozeTimeout *= SECONDS_TO_MS;
+    return ConfigLoader.#toRuntimeReminder(reminderToSave);
+  }
+
+  static updateReminder(id, updatedData, filePath = CONFIG_PATH) {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Config file not found: ${filePath}`);
     }
 
-    return runtimeReminder;
+    let raw;
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      raw = JSON.parse(content);
+    } catch {
+      throw new Error(`Invalid JSON in config file: ${filePath}`);
+    }
+
+    if (!raw.reminders || !Array.isArray(raw.reminders)) {
+      throw new Error(`Reminder with id "${id}" not found`);
+    }
+
+    const index = raw.reminders.findIndex((r) => r.id === id);
+    if (index === -1) {
+      throw new Error(`Reminder with id "${id}" not found`);
+    }
+
+    const reminderToSave = ConfigLoader.#normalizeReminder({
+      ...raw.reminders[index],
+      ...updatedData,
+      id,
+    });
+
+    const otherIds = new Set(raw.reminders.filter((r) => r.id !== id).map((r) => r.id));
+    ConfigLoader.validateReminder(reminderToSave, otherIds);
+
+    raw.reminders[index] = reminderToSave;
+    fs.writeFileSync(filePath, JSON.stringify(raw, null, 2), 'utf8');
+
+    return ConfigLoader.#toRuntimeReminder(reminderToSave);
+  }
+
+  static deleteReminder(id, filePath = CONFIG_PATH) {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Config file not found: ${filePath}`);
+    }
+
+    let raw;
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      raw = JSON.parse(content);
+    } catch {
+      throw new Error(`Invalid JSON in config file: ${filePath}`);
+    }
+
+    if (!raw.reminders || !Array.isArray(raw.reminders)) {
+      throw new Error(`Reminder with id "${id}" not found`);
+    }
+
+    const index = raw.reminders.findIndex((r) => r.id === id);
+    if (index === -1) {
+      throw new Error(`Reminder with id "${id}" not found`);
+    }
+
+    raw.reminders.splice(index, 1);
+    fs.writeFileSync(filePath, JSON.stringify(raw, null, 2), 'utf8');
+
+    return id;
   }
 
   static #getCronRules(reminder) {

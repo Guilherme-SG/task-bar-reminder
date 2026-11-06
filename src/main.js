@@ -1,12 +1,15 @@
-const { app, dialog } = require('electron');
+const { app, dialog, shell } = require('electron');
+const path = require('path');
+const fs = require('fs');
 const ConfigLoader = require('./core/ConfigLoader.js');
 const Scheduler = require('./core/Scheduler.js');
 const AudioPlayer = require('./core/AudioPlayer.js');
 const StateStore = require('./core/StateStore.js');
 const FocusGuard = require('./core/FocusGuard.js');
+const ProcessList = require('./core/ProcessList.js');
 const ReminderService = require('./core/ReminderService.js');
 const ReminderWindow = require('./ui/ReminderWindow.js');
-const AddReminderWindow = require('./ui/AddReminderWindow.js');
+const ManageRemindersWindow = require('./ui/ManageRemindersWindow.js');
 const AppTray = require('./ui/Tray.js');
 
 app.commandLine.appendSwitch('disable-gpu-cache');
@@ -28,11 +31,13 @@ app.whenReady().then(async () => {
     return;
   }
 
+  ProcessList.startBackgroundScan();
+
   const scheduler = new Scheduler();
   const audioPlayer = new AudioPlayer(config.ffplayPath);
   const stateStore = new StateStore();
   const reminderWindow = new ReminderWindow(config);
-  const addReminderWindow = new AddReminderWindow();
+  const manageRemindersWindow = new ManageRemindersWindow();
   const tray = new AppTray();
   const focusGuard = new FocusGuard();
 
@@ -68,26 +73,54 @@ app.whenReady().then(async () => {
   tray.create();
   tray.updateMenu(config.reminders, []);
 
-  tray.onAddReminder = () => {
-    addReminderWindow.show();
+  const soundsDir = path.join(__dirname, '..', 'sounds');
+  const openSoundsFolder = async () => {
+    if (!fs.existsSync(soundsDir)) {
+      await fs.promises.mkdir(soundsDir, { recursive: true });
+    }
+    await shell.openPath(soundsDir);
   };
 
-  addReminderWindow.setOnSave(async (reminderData) => {
+  tray.onOpenSounds = openSoundsFolder;
+  manageRemindersWindow.setOnOpenSounds(openSoundsFolder);
+  manageRemindersWindow.setOnGetReminders(() => config.reminders);
+
+  manageRemindersWindow.setOnSave(async (reminderData) => {
     const savedReminder = ConfigLoader.saveReminder(reminderData);
     await reminderService.addReminder(savedReminder);
     updateTray(reminderService.getActiveReminders());
   });
 
+  manageRemindersWindow.setOnUpdate(async (id, reminderData) => {
+    const updatedReminder = ConfigLoader.updateReminder(id, reminderData);
+    await reminderService.updateReminder(id, updatedReminder);
+    updateTray(reminderService.getActiveReminders());
+  });
+
+  manageRemindersWindow.setOnDelete(async (id) => {
+    ConfigLoader.deleteReminder(id);
+    await reminderService.deleteReminder(id);
+    updateTray(reminderService.getActiveReminders());
+  });
+
+  tray.onAddReminder = () => {
+    manageRemindersWindow.show('add');
+  };
+
+  tray.onManageReminders = () => {
+    manageRemindersWindow.show('list');
+  };
+
   tray.onRestart = () => {
     reminderWindow.quitting = true;
-    addReminderWindow.quitting = true;
+    manageRemindersWindow.quitting = true;
     app.relaunch();
     app.quit();
   };
 
   tray.onQuit = () => {
     reminderWindow.quitting = true;
-    addReminderWindow.quitting = true;
+    manageRemindersWindow.quitting = true;
     app.quit();
   };
 

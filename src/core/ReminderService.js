@@ -47,6 +47,53 @@ class ReminderService {
     await this.#initReminder(reminder);
   }
 
+  async updateReminder(id, updatedReminder) {
+    const index = this.config.reminders.findIndex((r) => r.id === id);
+    if (index === -1) return;
+
+    const key = `${TIMEOUT_KEY_PREFIX}${id}`;
+    if (this.activeReminders.has(key)) {
+      clearTimeout(this.activeReminders.get(key));
+      this.activeReminders.delete(key);
+    }
+
+    this.#cancelAutoDismiss(id);
+
+    this.config.reminders[index] = updatedReminder;
+
+    const blockApps = this.#getBlockApps(updatedReminder);
+    if (this.focusGuard && blockApps.length > 0) {
+      this.focusGuard.start();
+    }
+
+    await this.#initReminder(updatedReminder);
+  }
+
+  async deleteReminder(id) {
+    const index = this.config.reminders.findIndex((r) => r.id === id);
+    if (index === -1) return;
+
+    const key = `${TIMEOUT_KEY_PREFIX}${id}`;
+    if (this.activeReminders.has(key)) {
+      clearTimeout(this.activeReminders.get(key));
+      this.activeReminders.delete(key);
+    }
+
+    this.#cancelAutoDismiss(id);
+
+    this.queue = this.queue.filter((r) => r.id !== id);
+    this.shownReminders.delete(id);
+    this.deferredReminders.delete(id);
+
+    this.reminderWindow.removeReminder(id);
+    if (this.shownReminders.size === 0) {
+      this.reminderWindow.hide();
+    }
+
+    this.config.reminders.splice(index, 1);
+    await this.stateStore.clearNextFireTime(id);
+  }
+
   async #initReminder(reminder) {
     const nextFireTime = await this.stateStore.getNextFireTime(reminder.id);
 
