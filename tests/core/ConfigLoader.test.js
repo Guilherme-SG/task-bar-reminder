@@ -536,4 +536,95 @@ describe('ConfigLoader', () => {
       expect(() => ConfigLoader.load()).toThrow('Reminder "a" blockWhenFocused must be an array of non-empty strings');
     });
   });
+
+  describe('saveReminder', () => {
+    it('throws if config file not found', () => {
+      fs.existsSync.mockReturnValue(false);
+
+      expect(() => ConfigLoader.saveReminder({ id: 'new', title: 'New', cron: '* * * * *' })).toThrow(
+        'Config file not found'
+      );
+    });
+
+    it('throws if config file has invalid JSON', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue('invalid json');
+
+      expect(() => ConfigLoader.saveReminder({ id: 'new', title: 'New', cron: '* * * * *' })).toThrow(
+        'Invalid JSON in config file'
+      );
+    });
+
+    it('initializes raw.reminders if missing and saves valid reminder', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify({}));
+
+      const reminder = {
+        id: 'water-break',
+        title: 'Drink Water',
+        cron: '*/30 * * * *',
+        description: 'Drink a glass of water',
+        color: '#123456',
+        snoozeInterval: 120,
+        autoSnoozeTimeout: 30,
+        blockWhenFocused: 'game, app',
+      };
+
+      const result = ConfigLoader.saveReminder(reminder);
+
+      expect(fs.writeFileSync).toHaveBeenCalled();
+      const writtenContent = JSON.parse(fs.writeFileSync.mock.calls[0][1]);
+      expect(writtenContent.reminders).toHaveLength(1);
+      expect(writtenContent.reminders[0]).toEqual({
+        id: 'water-break',
+        title: 'Drink Water',
+        cron: '*/30 * * * *',
+        description: 'Drink a glass of water',
+        color: '#123456',
+        snoozeInterval: 120,
+        autoSnoozeTimeout: 30,
+        blockWhenFocused: ['game', 'app'],
+      });
+
+      expect(result.snoozeInterval).toBe(120000);
+      expect(result.autoSnoozeTimeout).toBe(30000);
+    });
+
+    it('cleans empty optional fields', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify({ reminders: [] }));
+
+      const reminder = {
+        id: 'simple',
+        title: 'Simple',
+        cron: '* * * * *',
+        description: '',
+        color: '',
+        snoozeInterval: '',
+        autoSnoozeTimeout: null,
+      };
+
+      const result = ConfigLoader.saveReminder(reminder);
+
+      expect(result.description).toBeUndefined();
+      expect(result.color).toBeUndefined();
+      expect(result.snoozeInterval).toBeUndefined();
+      expect(result.autoSnoozeTimeout).toBeUndefined();
+    });
+
+    it('throws on duplicate id', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify({ reminders: [{ id: 'existing', title: 'E', cron: '* * * * *' }] }));
+
+      expect(() =>
+        ConfigLoader.saveReminder({ id: 'existing', title: 'Duplicate', cron: '* * * * *' })
+      ).toThrow('Duplicate reminder id: "existing"');
+    });
+
+    it('defaults existingIds when calling validateReminder directly', () => {
+      expect(() =>
+        ConfigLoader.validateReminder({ id: 'valid-id', title: 'Valid Title', cron: '* * * * *' })
+      ).not.toThrow();
+    });
+  });
 });

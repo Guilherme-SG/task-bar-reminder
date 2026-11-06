@@ -7,6 +7,7 @@ class AppTray {
     this.onAction = null;
     this.onQuit = null;
     this.onRestart = null;
+    this.onAddReminder = null;
   }
 
   create() {
@@ -52,6 +53,17 @@ class AppTray {
     if (items.length > 0) {
       items.push({ type: 'separator' });
     }
+
+    items.push({
+      label: 'Add new reminder',
+      click: () => {
+        if (this.onAddReminder) {
+          this.onAddReminder();
+        }
+      },
+    });
+
+    items.push({ type: 'separator' });
 
     items.push({
       label: 'Restart',

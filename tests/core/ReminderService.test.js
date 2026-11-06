@@ -36,6 +36,7 @@ describe('ReminderService', () => {
 
     mockFocusGuard = {
       isBlocked: jest.fn().mockReturnValue(false),
+      start: jest.fn(),
     };
 
     config = {
@@ -691,6 +692,51 @@ describe('ReminderService', () => {
       await jest.advanceTimersByTimeAsync(3000);
 
       expect(mockReminderWindow.hide).toHaveBeenCalled();
+    });
+  });
+
+  describe('addReminder', () => {
+    it('adds reminder to config and schedules it', async () => {
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+
+      const newReminder = { id: 'exercise', title: 'Exercise', cron: '0 12 * * *' };
+      await service.addReminder(newReminder);
+
+      expect(service.config.reminders).toContainEqual(newReminder);
+      expect(mockStateStore.setNextFireTime).toHaveBeenCalledWith('exercise', expect.any(String));
+      expect(mockFocusGuard.start).not.toHaveBeenCalled();
+    });
+
+    it('starts focus guard if new reminder has blockWhenFocused', async () => {
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+
+      const newReminder = {
+        id: 'stretch',
+        title: 'Stretch',
+        cron: '0 14 * * *',
+        blockWhenFocused: ['game'],
+      };
+      await service.addReminder(newReminder);
+
+      expect(mockFocusGuard.start).toHaveBeenCalled();
+      expect(service.config.reminders).toContainEqual(newReminder);
+    });
+
+    it('handles service without focus guard', async () => {
+      service.focusGuard = null;
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+
+      const newReminder = {
+        id: 'stretch-2',
+        title: 'Stretch 2',
+        cron: '0 14 * * *',
+        blockWhenFocused: ['game'],
+      };
+
+      await expect(service.addReminder(newReminder)).resolves.not.toThrow();
     });
   });
 });

@@ -36,6 +36,17 @@ class ReminderService {
     }
   }
 
+  async addReminder(reminder) {
+    this.config.reminders.push(reminder);
+
+    const blockApps = this.#getBlockApps(reminder);
+    if (this.focusGuard && blockApps.length > 0) {
+      this.focusGuard.start();
+    }
+
+    await this.#initReminder(reminder);
+  }
+
   async #initReminder(reminder) {
     const nextFireTime = await this.stateStore.getNextFireTime(reminder.id);
 

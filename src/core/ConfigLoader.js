@@ -53,50 +53,8 @@ class ConfigLoader {
     const ids = new Set();
 
     for (const reminder of config.reminders) {
-      if (!reminder.id || typeof reminder.id !== 'string') {
-        throw new Error('Each reminder must have a string "id"');
-      }
-
-      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(reminder.id)) {
-        throw new Error(`Reminder "id" must be lowercase kebab-case (e.g., "drink-water")`);
-      }
-
-      if (ids.has(reminder.id)) {
-        throw new Error(`Duplicate reminder id: "${reminder.id}"`);
-      }
+      ConfigLoader.validateReminder(reminder, ids);
       ids.add(reminder.id);
-
-      if (!reminder.title || typeof reminder.title !== 'string') {
-        throw new Error(`Reminder "${reminder.id}" must have a string "title"`);
-      }
-
-      const cronRules = ConfigLoader.#getCronRules(reminder);
-
-      for (const cronExpression of cronRules) {
-        if (!cron.validate(cronExpression)) {
-          throw new Error(`Reminder "${reminder.id}" has invalid cron expression: "${cronExpression}"`);
-        }
-      }
-
-      if (reminder.description !== undefined && typeof reminder.description !== 'string') {
-        throw new Error(`Reminder "${reminder.id}" description must be a string`);
-      }
-
-      if (reminder.color !== undefined && !ConfigLoader.#isValidHex(reminder.color)) {
-        throw new Error(`Reminder "${reminder.id}" has invalid color: "${reminder.color}"`);
-      }
-
-      if (reminder.snoozeInterval !== undefined && (typeof reminder.snoozeInterval !== 'number' || reminder.snoozeInterval < 0)) {
-        throw new Error(`Reminder "${reminder.id}" snoozeInterval must be a non-negative number`);
-      }
-
-      if (reminder.autoSnoozeTimeout !== undefined && (typeof reminder.autoSnoozeTimeout !== 'number' || reminder.autoSnoozeTimeout < 0)) {
-        throw new Error(`Reminder "${reminder.id}" autoSnoozeTimeout must be a non-negative number`);
-      }
-
-      if (reminder.blockWhenFocused !== undefined && !ConfigLoader.#isStringList(reminder.blockWhenFocused)) {
-        throw new Error(`Reminder "${reminder.id}" blockWhenFocused must be an array of non-empty strings`);
-      }
     }
 
     if (config.window.defaultColor !== undefined && !ConfigLoader.#isValidHex(config.window.defaultColor)) {
@@ -114,6 +72,104 @@ class ConfigLoader {
     if (!ConfigLoader.#isStringList(config.blockWhenFocused)) {
       throw new Error('"blockWhenFocused" must be an array of non-empty strings');
     }
+  }
+
+  static validateReminder(reminder, existingIds = new Set()) {
+    if (!reminder.id || typeof reminder.id !== 'string') {
+      throw new Error('Each reminder must have a string "id"');
+    }
+
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(reminder.id)) {
+      throw new Error(`Reminder "id" must be lowercase kebab-case (e.g., "drink-water")`);
+    }
+
+    if (existingIds.has(reminder.id)) {
+      throw new Error(`Duplicate reminder id: "${reminder.id}"`);
+    }
+
+    if (!reminder.title || typeof reminder.title !== 'string') {
+      throw new Error(`Reminder "${reminder.id}" must have a string "title"`);
+    }
+
+    const cronRules = ConfigLoader.#getCronRules(reminder);
+
+    for (const cronExpression of cronRules) {
+      if (!cron.validate(cronExpression)) {
+        throw new Error(`Reminder "${reminder.id}" has invalid cron expression: "${cronExpression}"`);
+      }
+    }
+
+    if (reminder.description !== undefined && typeof reminder.description !== 'string') {
+      throw new Error(`Reminder "${reminder.id}" description must be a string`);
+    }
+
+    if (reminder.color !== undefined && !ConfigLoader.#isValidHex(reminder.color)) {
+      throw new Error(`Reminder "${reminder.id}" has invalid color: "${reminder.color}"`);
+    }
+
+    if (reminder.snoozeInterval !== undefined && (typeof reminder.snoozeInterval !== 'number' || reminder.snoozeInterval < 0)) {
+      throw new Error(`Reminder "${reminder.id}" snoozeInterval must be a non-negative number`);
+    }
+
+    if (reminder.autoSnoozeTimeout !== undefined && (typeof reminder.autoSnoozeTimeout !== 'number' || reminder.autoSnoozeTimeout < 0)) {
+      throw new Error(`Reminder "${reminder.id}" autoSnoozeTimeout must be a non-negative number`);
+    }
+
+    if (reminder.blockWhenFocused !== undefined && !ConfigLoader.#isStringList(reminder.blockWhenFocused)) {
+      throw new Error(`Reminder "${reminder.id}" blockWhenFocused must be an array of non-empty strings`);
+    }
+  }
+
+  static saveReminder(newReminder, filePath = CONFIG_PATH) {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Config file not found: ${filePath}`);
+    }
+
+    let raw;
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      raw = JSON.parse(content);
+    } catch {
+      throw new Error(`Invalid JSON in config file: ${filePath}`);
+    }
+
+    if (!raw.reminders || !Array.isArray(raw.reminders)) {
+      raw.reminders = [];
+    }
+
+    const existingIds = new Set(raw.reminders.map((r) => r.id));
+
+    const reminderToSave = { ...newReminder };
+    if (typeof reminderToSave.blockWhenFocused === 'string') {
+      reminderToSave.blockWhenFocused = reminderToSave.blockWhenFocused
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+    }
+
+    if (reminderToSave.description === '') delete reminderToSave.description;
+    if (reminderToSave.color === '') delete reminderToSave.color;
+    if (reminderToSave.snoozeInterval === '' || reminderToSave.snoozeInterval === null) {
+      delete reminderToSave.snoozeInterval;
+    }
+    if (reminderToSave.autoSnoozeTimeout === '' || reminderToSave.autoSnoozeTimeout === null) {
+      delete reminderToSave.autoSnoozeTimeout;
+    }
+
+    ConfigLoader.validateReminder(reminderToSave, existingIds);
+
+    raw.reminders.push(reminderToSave);
+    fs.writeFileSync(filePath, JSON.stringify(raw, null, 2), 'utf8');
+
+    const runtimeReminder = { ...reminderToSave };
+    if (runtimeReminder.snoozeInterval !== undefined) {
+      runtimeReminder.snoozeInterval *= SECONDS_TO_MS;
+    }
+    if (runtimeReminder.autoSnoozeTimeout !== undefined) {
+      runtimeReminder.autoSnoozeTimeout *= SECONDS_TO_MS;
+    }
+
+    return runtimeReminder;
   }
 
   static #getCronRules(reminder) {

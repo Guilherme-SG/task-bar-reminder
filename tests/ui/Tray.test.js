@@ -57,16 +57,18 @@ describe('AppTray', () => {
       Menu.buildFromTemplate.mockClear();
     });
 
-    it('shows only Restart and Exit when no active reminders', () => {
+    it('shows Add new reminder, Restart and Exit when no active reminders', () => {
       tray.updateMenu(
         [{ id: 'water', title: 'Drink Water' }],
         []
       );
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      expect(call).toHaveLength(2);
-      expect(call[0].label).toBe('Restart');
-      expect(call[1].label).toBe('Exit');
+      expect(call).toHaveLength(4);
+      expect(call[0].label).toBe('Add new reminder');
+      expect(call[1].type).toBe('separator');
+      expect(call[2].label).toBe('Restart');
+      expect(call[3].label).toBe('Exit');
     });
 
     it('shows Done and Snooze for active reminders', () => {
@@ -76,12 +78,14 @@ describe('AppTray', () => {
       );
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      expect(call).toHaveLength(5);
+      expect(call).toHaveLength(7);
       expect(call[0].label).toBe('Done - "Drink Water"');
       expect(call[1].label).toBe('Snooze - "Drink Water"');
       expect(call[2].type).toBe('separator');
-      expect(call[3].label).toBe('Restart');
-      expect(call[4].label).toBe('Exit');
+      expect(call[3].label).toBe('Add new reminder');
+      expect(call[4].type).toBe('separator');
+      expect(call[5].label).toBe('Restart');
+      expect(call[6].label).toBe('Exit');
     });
 
     it('mixes active and inactive reminders', () => {
@@ -97,8 +101,10 @@ describe('AppTray', () => {
       expect(call[0].label).toBe('Done - "Drink Water"');
       expect(call[1].label).toBe('Snooze - "Drink Water"');
       expect(call[2].type).toBe('separator');
-      expect(call[3].label).toBe('Restart');
-      expect(call[4].label).toBe('Exit');
+      expect(call[3].label).toBe('Add new reminder');
+      expect(call[4].type).toBe('separator');
+      expect(call[5].label).toBe('Restart');
+      expect(call[6].label).toBe('Exit');
     });
 
     it('marks pending reminders in the labels', () => {
@@ -108,7 +114,7 @@ describe('AppTray', () => {
       );
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      expect(call).toHaveLength(5);
+      expect(call).toHaveLength(7);
       expect(call[0].label).toBe('Done - "Drink Water" (pending)');
       expect(call[1].label).toBe('Snooze - "Drink Water" (pending)');
     });
@@ -154,6 +160,25 @@ describe('AppTray', () => {
       expect(() => call[1].click()).not.toThrow();
     });
 
+    it('calls onAddReminder when Add new reminder is clicked', () => {
+      const onAdd = jest.fn();
+      tray.onAddReminder = onAdd;
+
+      tray.updateMenu([], []);
+
+      const call = Menu.buildFromTemplate.mock.calls[0][0];
+      call[0].click();
+
+      expect(onAdd).toHaveBeenCalled();
+    });
+
+    it('does not throw when onAddReminder is not set', () => {
+      tray.updateMenu([], []);
+
+      const call = Menu.buildFromTemplate.mock.calls[0][0];
+      expect(() => call[0].click()).not.toThrow();
+    });
+
     it('calls onQuit when Exit is clicked', () => {
       const onQuit = jest.fn();
       tray.onQuit = onQuit;
@@ -161,7 +186,7 @@ describe('AppTray', () => {
       tray.updateMenu([], []);
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      call[1].click();
+      call[3].click();
 
       expect(onQuit).toHaveBeenCalled();
     });
@@ -170,17 +195,20 @@ describe('AppTray', () => {
       tray.updateMenu([], []);
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      call[1].click();
+      call[3].click();
 
       expect(app.quit).toHaveBeenCalled();
     });
+
     it('defaults activeReminders to empty when not provided', () => {
       tray.updateMenu([{ id: 'water', title: 'Drink Water' }]);
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      expect(call).toHaveLength(2);
-      expect(call[0].label).toBe('Restart');
-      expect(call[1].label).toBe('Exit');
+      expect(call).toHaveLength(4);
+      expect(call[0].label).toBe('Add new reminder');
+      expect(call[1].type).toBe('separator');
+      expect(call[2].label).toBe('Restart');
+      expect(call[3].label).toBe('Exit');
     });
 
     it('calls onRestart when Restart is clicked', () => {
@@ -190,7 +218,7 @@ describe('AppTray', () => {
       tray.updateMenu([], []);
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      call[0].click();
+      call[2].click();
 
       expect(onRestart).toHaveBeenCalled();
     });
@@ -199,7 +227,7 @@ describe('AppTray', () => {
       tray.updateMenu([], []);
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      expect(() => call[0].click()).not.toThrow();
+      expect(() => call[2].click()).not.toThrow();
     });
   });
 });

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Add New Reminder</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: transparent;
+      color: #e6e6e6;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .window-container {
+      background: rgba(22, 26, 34, 0.96);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .title-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px 10px 18px;
+      -webkit-app-region: drag;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .title-bar-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: #ffffff;
+    }
+
+    .close-btn {
+      -webkit-app-region: no-drag;
+      background: transparent;
+      border: none;
+      color: #8b949e;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .content {
+      padding: 16px 18px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+
+    .content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #8b949e;
+    }
+
+    .label-hint {
+      font-size: 11px;
+      font-weight: 400;
+      color: #6e7681;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      background: rgba(13, 17, 23, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: #e6e6e6;
+      font-size: 13px;
+      padding: 8px 10px;
+      outline: none;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #3b82f6;
+      background: rgba(13, 17, 23, 1);
+    }
+
+    textarea {
+      resize: none;
+    }
+
+    .color-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="color"] {
+      -webkit-appearance: none;
+      border: none;
+      width: 36px;
+      height: 34px;
+      border-radius: 8px;
+      cursor: pointer;
+      background: transparent;
+      padding: 0;
+    }
+
+    input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    input[type="color"]::-webkit-color-swatch {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+    }
+
+    .color-row input[type="text"] {
+      flex: 1;
+    }
+
+    .error-banner {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 12px 18px 16px 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    button {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #c9d1d9;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="window-container">
+    <div class="title-bar">
+      <span class="title-bar-title">Add New Reminder</span>
+      <button class="close-btn" id="closeBtn" title="Close">&times;</button>
+    </div>
+
+    <div class="content">
+      <div id="errorBanner" class="error-banner" style="display: none;"></div>
+
+      <div class="form-group">
+        <label for="title">Title *</label>
+        <input type="text" id="title" placeholder="e.g. Drink Water" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label for="id">ID (kebab-case) * <span class="label-hint">sounds/{id}-alert-1.mp3</span></label>
+        <input type="text" id="id" placeholder="e.g. drink-water" required>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description <span class="label-hint">(optional)</span></label>
+        <textarea id="description" placeholder="e.g. Drink 350ml of water" rows="2"></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="preset">Schedule Preset</label>
+          <select id="preset">
+            <option value="*/30 * * * *">Every 30 minutes</option>
+            <option value="*/15 * * * *">Every 15 minutes</option>
+            <option value="0 * * * *">Every hour</option>
+            <option value="0 */2 * * *">Every 2 hours</option>
+            <option value="0 9 * * *">Daily at 09:00 AM</option>
+            <option value="0 12 * * *">Daily at 12:00 PM</option>
+            <option value="0 18 * * *">Daily at 06:00 PM</option>
+            <option value="custom">Custom Cron Expression...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="cron">Cron Expression * <span class="label-hint">(5 or 6 fields)</span></label>
+        <input type="text" id="cron" value="*/30 * * * *" placeholder="*/30 * * * *">
+      </div>
+
+      <div class="form-group">
+        <label for="colorText">Card Color</label>
+        <div class="color-row">
+          <input type="color" id="colorPicker" value="#1e3a5f">
+          <input type="text" id="colorText" value="#1e3a5f" placeholder="#1e3a5f">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="snoozeInterval">Snooze (seconds)</label>
+          <input type="number" id="snoozeInterval" min="0" placeholder="300 (5 min)">
+        </div>
+        <div class="form-group">
+          <label for="autoSnoozeTimeout">Auto-dismiss (seconds)</label>
+          <input type="number" id="autoSnoozeTimeout" min="0" placeholder="60 (1 min, 0=off)">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="blockWhenFocused">Block When Focused <span class="label-hint">(comma-separated)</span></label>
+        <input type="text" id="blockWhenFocused" placeholder="e.g. dota2, eldenring">
+      </div>
+    </div>
+
+    <div class="footer">
+      <button class="btn-secondary" id="cancelBtn">Cancel</button>
+      <button class="btn-primary" id="saveBtn">Save Reminder</button>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    const titleInput = document.getElementById('title');
+    const idInput = document.getElementById('id');
+    const descInput = document.getElementById('description');
+    const presetSelect = document.getElementById('preset');
+    const cronInput = document.getElementById('cron');
+    const colorPicker = document.getElementById('colorPicker');
+    const colorText = document.getElementById('colorText');
+    const snoozeInput = document.getElementById('snoozeInterval');
+    const autoSnoozeInput = document.getElementById('autoSnoozeTimeout');
+    const blockInput = document.getElementById('blockWhenFocused');
+    const errorBanner = document.getElementById('errorBanner');
+    const saveBtn = document.getElementById('saveBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const closeBtn = document.getElementById('closeBtn');
+
+    let idManuallyEdited = false;
+
+    function slugify(text) {
+      return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    titleInput.addEventListener('input', () => {
+      if (!idManuallyEdited) {
+        idInput.value = slugify(titleInput.value);
+      }
+    });
+
+    idInput.addEventListener('input', () => {
+      idManuallyEdited = true;
+    });
+
+    presetSelect.addEventListener('change', () => {
+      if (presetSelect.value !== 'custom') {
+        cronInput.value = presetSelect.value;
+      }
+    });
+
+    cronInput.addEventListener('input', () => {
+      const matchingOption = Array.from(presetSelect.options).find(
+        (opt) => opt.value === cronInput.value.trim()
+      );
+      presetSelect.value = matchingOption ? matchingOption.value : 'custom';
+    });
+
+    colorPicker.addEventListener('input', () => {
+      colorText.value = colorPicker.value;
+    });
+
+    colorText.addEventListener('input', () => {
+      if (/^#[0-9a-fA-F]{6}$/.test(colorText.value.trim())) {
+        colorPicker.value = colorText.value.trim();
+      }
+    });
+
+    function showError(msg) {
+      errorBanner.textContent = msg;
+      errorBanner.style.display = 'block';
+    }
+
+    function hideError() {
+      errorBanner.textContent = '';
+      errorBanner.style.display = 'none';
+    }
+
+    function closeWindow() {
+      hideError();
+      ipcRenderer.send('close-add-reminder');
+    }
+
+    cancelBtn.addEventListener('click', closeWindow);
+    closeBtn.addEventListener('click', closeWindow);
+
+    saveBtn.addEventListener('click', async () => {
+      hideError();
+
+      const title = titleInput.value.trim();
+      const id = idInput.value.trim();
+      const cron = cronInput.value.trim();
+
+      if (!title) {
+        showError('Title is required');
+        return;
+      }
+
+      if (!id) {
+        showError('ID is required');
+        return;
+      }
+
+      if (!cron) {
+        showError('Cron expression is required');
+        return;
+      }
+
+      const reminderData = {
+        id,
+        title,
+        cron,
+      };
+
+      const description = descInput.value.trim();
+      if (description) {
+        reminderData.description = description;
+      }
+
+      const color = colorText.value.trim();
+      if (color) {
+        reminderData.color = color;
+      }
+
+      if (snoozeInput.value !== '') {
+        reminderData.snoozeInterval = Number(snoozeInput.value);
+      }
+
+      if (autoSnoozeInput.value !== '') {
+        reminderData.autoSnoozeTimeout = Number(autoSnoozeInput.value);
+      }
+
+      const blockApps = blockInput.value.trim();
+      if (blockApps) {
+        reminderData.blockWhenFocused = blockApps;
+      }
+
+      saveBtn.disabled = true;
+
+      try {
+        const response = await ipcRenderer.invoke('save-reminder', reminderData);
+        if (response && response.success) {
+          // Reset form fields
+          titleInput.value = '';
+          idInput.value = '';
+          descInput.value = '';
+          presetSelect.value = '*/30 * * * *';
+          cronInput.value = '*/30 * * * *';
+          colorPicker.value = '#1e3a5f';
+          colorText.value = '#1e3a5f';
+          snoozeInput.value = '';
+          autoSnoozeInput.value = '';
+          blockInput.value = '';
+          idManuallyEdited = false;
+        } else {
+          showError((response && response.error) || 'Failed to save reminder');
+        }
+      } catch (err) {
+        showError(err.message || 'An error occurred while saving');
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
