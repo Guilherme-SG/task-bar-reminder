@@ -1,0 +1,14 @@
+{
+  "testCommand": "npx jest --json",
+  "reporter": "jest-json",
+  "testGlobs": [
+    "test/**",
+    "tests/**",
+    "src/**/*.test.*",
+    "src/**/*.spec.*",
+    "__tests__/**"
+  ],
+  "srcGlobs": [
+    "src/**"
+  ]
+}
