@@ -1,7 +1,7 @@
 {
   "feature": "quick-one-shot-reminder",
-  "timestamp": "2026-11-17T21:51:05.641Z",
-  "gitRev": "fa7a4f9",
+  "timestamp": "2026-11-17T22:09:45.834Z",
+  "gitRev": "d8a9741",
   "command": "npx jest --json",
   "reporter": "jest-json",
   "exitCode": 0,
@@ -34,7 +34,7 @@
     },
     "AC-013": {
       "status": "pass",
-      "testName": "ManageRemindersWindow show and window lifecycle sends init-view with quick mode when show(\"quick\") is called @spec:AC-013 sends init-view with quick mode when show(\"quick\") is called @spec:AC-013",
+      "testName": "AppTray updateMenu calls onQuickReminder when Add one-time reminder is clicked @spec:AC-013 calls onQuickReminder when Add one-time reminder is clicked @spec:AC-013",
       "method": "jest-json"
     },
     "AC-014": {
