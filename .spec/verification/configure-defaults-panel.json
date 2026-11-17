@@ -1,7 +1,7 @@
 {
   "feature": "configure-defaults-panel",
-  "timestamp": "2026-11-17T22:09:40.971Z",
-  "gitRev": "d8a9741",
+  "timestamp": "2026-11-17T22:27:38.412Z",
+  "gitRev": "c1e4dda",
   "command": "npx jest --json",
   "reporter": "jest-json",
   "exitCode": 0,
@@ -24,7 +24,7 @@
     },
     "AC-004": {
       "status": "pass",
-      "testName": "ManageRemindersWindow show and window lifecycle sends init-view with settings mode when show(\"settings\") is called @spec:AC-004 sends init-view with settings mode when show(\"settings\") is called @spec:AC-004",
+      "testName": "AppTray updateMenu calls onOpenSettings when Settings is clicked @spec:AC-004 calls onOpenSettings when Settings is clicked @spec:AC-004",
       "method": "jest-json"
     },
     "AC-005": {

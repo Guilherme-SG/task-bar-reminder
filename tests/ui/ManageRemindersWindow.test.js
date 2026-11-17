@@ -253,7 +253,11 @@ describe('ManageRemindersWindow', () => {
       expect(manageWindow.window).toBeNull();
       manageWindow.show('edit', 'water');
 
-      expect(BrowserWindow).toHaveBeenCalled();
+      expect(BrowserWindow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          alwaysOnTop: false,
+        })
+      );
       expect(manageWindow.window.show).toHaveBeenCalled();
       expect(manageWindow.window.focus).toHaveBeenCalled();
       expect(manageWindow.window.webContents.send).toHaveBeenCalledWith('init-view', {

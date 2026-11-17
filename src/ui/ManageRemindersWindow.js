@@ -195,7 +195,7 @@ class ManageRemindersWindow {
       skipTaskbar: false,
       darkTheme: true,
       autoHideMenuBar: true,
-      alwaysOnTop: true,
+      alwaysOnTop: false,
       center: true,
       show: false,
       webPreferences: {
