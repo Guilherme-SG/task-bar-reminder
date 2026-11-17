@@ -975,4 +975,151 @@ describe('ConfigLoader', () => {
       expect(updated.blockWhenFocused).toBeUndefined();
     });
   });
+
+  describe('one-shot reminders and useDefaultSound', () => {
+    it('generates unique kebab-case IDs for one-shot reminders including empty titles and collisions @spec:AC-008', () => {
+      const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1700000000000);
+      try {
+        expect(ConfigLoader.generateOneShotId()).toBe('oneshot-1700000000000');
+        expect(ConfigLoader.generateOneShotId('!!!')).toBe('oneshot-1700000000000');
+        expect(ConfigLoader.generateOneShotId('Turn off the oven!')).toBe('oneshot-turn-off-the-oven-1700000000000');
+
+        const existing = new Set([
+          'oneshot-turn-off-the-oven-1700000000000',
+          'oneshot-turn-off-the-oven-1700000000000-2',
+        ]);
+        expect(ConfigLoader.generateOneShotId('Turn off the oven!', existing)).toBe(
+          'oneshot-turn-off-the-oven-1700000000000-3'
+        );
+      } finally {
+        nowSpy.mockRestore();
+      }
+    });
+
+    it('auto-generates ID and converts delaySeconds to ISO fireAt without requiring cron @spec:AC-008', () => {
+      const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1700000000000);
+      try {
+        fs.existsSync.mockReturnValue(true);
+        fs.readFileSync.mockReturnValue(JSON.stringify({ reminders: [] }));
+
+        const saved = ConfigLoader.saveReminder({
+          title: 'Turn off the oven',
+          oneShot: true,
+          delaySeconds: 900,
+        });
+
+        expect(saved.id).toBe('oneshot-turn-off-the-oven-1700000000000');
+        expect(saved.oneShot).toBe(true);
+        expect(saved.delaySeconds).toBeUndefined();
+        expect(saved.fireAt).toBe(new Date(1700000000000 + 900000).toISOString());
+        expect(saved.cron).toBeUndefined();
+
+        const written = JSON.parse(fs.writeFileSync.mock.calls[0][1]);
+        expect(written.reminders[0].id).toBe(saved.id);
+        expect(written.reminders[0].fireAt).toBe(saved.fireAt);
+      } finally {
+        nowSpy.mockRestore();
+      }
+    });
+
+    it('rejects invalid oneShot, delaySeconds, fireAt, and useDefaultSound values @spec:AC-008', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify({ reminders: [] }));
+
+      expect(() =>
+        ConfigLoader.saveReminder({ id: 'bad-1', title: 'Bad', cron: '* * * * *', oneShot: 'yes' })
+      ).toThrow('oneShot must be a boolean');
+
+      expect(() =>
+        ConfigLoader.saveReminder({ title: 'Bad delay', oneShot: true, delaySeconds: 0 })
+      ).toThrow('delaySeconds" must be a positive number');
+
+      expect(() =>
+        ConfigLoader.saveReminder({ title: 'Bad delay 2', oneShot: true, delaySeconds: '10' })
+      ).toThrow('delaySeconds" must be a positive number');
+
+      expect(() =>
+        ConfigLoader.saveReminder({ title: 'Bad delay 3', oneShot: true, delaySeconds: Number.NaN })
+      ).toThrow('delaySeconds" must be a positive number');
+
+      expect(() =>
+        ConfigLoader.saveReminder({ id: 'oneshot-missing-fireat', title: 'No fireAt', oneShot: true })
+      ).toThrow('must have a valid ISO "fireAt" timestamp');
+
+      expect(() =>
+        ConfigLoader.saveReminder({
+          id: 'oneshot-bad-fireat',
+          title: 'Invalid fireAt',
+          oneShot: true,
+          fireAt: 'not-a-date',
+        })
+      ).toThrow('must have a valid ISO "fireAt" timestamp');
+
+      expect(() =>
+        ConfigLoader.saveReminder({
+          id: 'bad-sound-flag',
+          title: 'Bad Sound',
+          cron: '* * * * *',
+          useDefaultSound: 'true',
+        })
+      ).toThrow('useDefaultSound must be a boolean');
+    });
+
+    it('supports multiple concurrent one-shot reminders with full config overrides and load() @spec:AC-009', () => {
+      const existing = [
+        {
+          id: 'oneshot-oven-1',
+          title: 'Oven',
+          oneShot: true,
+          fireAt: '2026-11-17T20:00:00.000Z',
+          color: '#ff5500',
+          snoozeInterval: 120,
+          autoSnoozeTimeout: 30,
+          blockWhenFocused: ['dota2'],
+          useDefaultSound: false,
+        },
+      ];
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify({ reminders: existing }));
+
+      const second = ConfigLoader.saveReminder({
+        title: 'Oven',
+        oneShot: true,
+        fireAt: '2026-11-17T20:15:00.000Z',
+        snoozeInterval: 60,
+        useDefaultSound: true,
+      });
+
+      const savedFile = JSON.parse(fs.writeFileSync.mock.calls[0][1]);
+      expect(savedFile.reminders).toHaveLength(2);
+      expect(savedFile.reminders[0].id).not.toBe(second.id);
+
+      fs.readFileSync.mockReturnValue(JSON.stringify(savedFile));
+      const loaded = ConfigLoader.load();
+      expect(loaded.reminders).toHaveLength(2);
+      expect(loaded.reminders[0].snoozeInterval).toBe(120000);
+      expect(loaded.reminders[0].useDefaultSound).toBe(false);
+      expect(loaded.reminders[1].snoozeInterval).toBe(60000);
+      expect(loaded.reminders[1].useDefaultSound).toBe(true);
+    });
+
+    it('accepts useDefaultSound boolean on recurring and one-shot reminders @spec:AC-010', () => {
+      writeConfig({
+        reminders: [
+          { id: 'water', title: 'Water', cron: '0 * * * *', useDefaultSound: false },
+          {
+            id: 'oneshot-tea',
+            title: 'Tea',
+            oneShot: true,
+            fireAt: '2026-11-17T20:00:00.000Z',
+            useDefaultSound: true,
+          },
+        ],
+      });
+
+      const loaded = ConfigLoader.load();
+      expect(loaded.reminders[0].useDefaultSound).toBe(false);
+      expect(loaded.reminders[1].useDefaultSound).toBe(true);
+    });
+  });
 });

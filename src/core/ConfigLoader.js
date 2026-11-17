@@ -166,6 +166,25 @@ class ConfigLoader {
     ConfigLoader.validateSettings(config);
   }
 
+  static generateOneShotId(title = '', existingIds = new Set()) {
+    const slug = String(title)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 24)
+      .replace(/-+$/g, '');
+    const base = slug ? `oneshot-${slug}-${Date.now()}` : `oneshot-${Date.now()}`;
+    let candidate = base;
+    let suffix = 2;
+    while (existingIds.has(candidate)) {
+      candidate = `${base}-${suffix}`;
+      suffix += 1;
+    }
+    return candidate;
+  }
+
   static validateReminder(reminder, existingIds = new Set()) {
     if (!reminder.id || typeof reminder.id !== 'string') {
       throw new Error('Each reminder must have a string "id"');
@@ -183,11 +202,21 @@ class ConfigLoader {
       throw new Error(`Reminder "${reminder.id}" must have a string "title"`);
     }
 
-    const cronRules = ConfigLoader.#getCronRules(reminder);
+    if (reminder.oneShot !== undefined && typeof reminder.oneShot !== 'boolean') {
+      throw new Error(`Reminder "${reminder.id}" oneShot must be a boolean`);
+    }
 
-    for (const cronExpression of cronRules) {
-      if (!cron.validate(cronExpression)) {
-        throw new Error(`Reminder "${reminder.id}" has invalid cron expression: "${cronExpression}"`);
+    if (reminder.oneShot) {
+      if (typeof reminder.fireAt !== 'string' || Number.isNaN(new Date(reminder.fireAt).getTime())) {
+        throw new Error(`One-shot reminder "${reminder.id}" must have a valid ISO "fireAt" timestamp`);
+      }
+    } else {
+      const cronRules = ConfigLoader.#getCronRules(reminder);
+
+      for (const cronExpression of cronRules) {
+        if (!cron.validate(cronExpression)) {
+          throw new Error(`Reminder "${reminder.id}" has invalid cron expression: "${cronExpression}"`);
+        }
       }
     }
 
@@ -210,6 +239,10 @@ class ConfigLoader {
     if (reminder.blockWhenFocused !== undefined && !ConfigLoader.#isStringList(reminder.blockWhenFocused)) {
       throw new Error(`Reminder "${reminder.id}" blockWhenFocused must be an array of non-empty strings`);
     }
+
+    if (reminder.useDefaultSound !== undefined && typeof reminder.useDefaultSound !== 'boolean') {
+      throw new Error(`Reminder "${reminder.id}" useDefaultSound must be a boolean`);
+    }
   }
 
   static #normalizeStringList(value) {
@@ -222,8 +255,21 @@ class ConfigLoader {
     return value;
   }
 
-  static #normalizeReminder(rawReminder) {
+  static #normalizeReminder(rawReminder, existingIds) {
     const reminder = { ...rawReminder };
+    if (reminder.oneShot === true) {
+      if (!reminder.id) {
+        reminder.id = ConfigLoader.generateOneShotId(reminder.title, existingIds);
+      }
+      if (reminder.delaySeconds !== undefined) {
+        if (typeof reminder.delaySeconds !== 'number' || Number.isNaN(reminder.delaySeconds) || reminder.delaySeconds <= 0) {
+          throw new Error('One-shot reminder "delaySeconds" must be a positive number');
+        }
+        reminder.fireAt = new Date(Date.now() + reminder.delaySeconds * SECONDS_TO_MS).toISOString();
+        delete reminder.delaySeconds;
+      }
+    }
+
     if (reminder.blockWhenFocused !== undefined) {
       reminder.blockWhenFocused = ConfigLoader.#normalizeStringList(reminder.blockWhenFocused);
     }
@@ -260,7 +306,7 @@ class ConfigLoader {
     }
 
     const existingIds = new Set(raw.reminders.map((r) => r.id));
-    const reminderToSave = ConfigLoader.#normalizeReminder(newReminder);
+    const reminderToSave = ConfigLoader.#normalizeReminder(newReminder, existingIds);
 
     ConfigLoader.validateReminder(reminderToSave, existingIds);
 
@@ -282,13 +328,13 @@ class ConfigLoader {
       throw new Error(`Reminder with id "${id}" not found`);
     }
 
+    const otherIds = new Set(raw.reminders.filter((r) => r.id !== id).map((r) => r.id));
     const reminderToSave = ConfigLoader.#normalizeReminder({
       ...raw.reminders[index],
       ...updatedData,
       id,
-    });
+    }, otherIds);
 
-    const otherIds = new Set(raw.reminders.filter((r) => r.id !== id).map((r) => r.id));
     ConfigLoader.validateReminder(reminderToSave, otherIds);
 
     raw.reminders[index] = reminderToSave;

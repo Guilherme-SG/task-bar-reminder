@@ -227,6 +227,12 @@ class ManageRemindersWindow {
       this.window.hide();
     }
   }
+
+  notifyRemindersChanged() {
+    if (this.window && !this.window.isDestroyed()) {
+      this.window.webContents.send('reminders-changed');
+    }
+  }
 }
 
 module.exports = ManageRemindersWindow;

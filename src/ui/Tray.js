@@ -8,6 +8,7 @@ class AppTray {
     this.onQuit = null;
     this.onRestart = null;
     this.onAddReminder = null;
+    this.onQuickReminder = null;
     this.onManageReminders = null;
     this.onOpenSounds = null;
     this.onOpenSettings = null;
@@ -62,6 +63,15 @@ class AppTray {
       click: () => {
         if (this.onAddReminder) {
           this.onAddReminder();
+        }
+      },
+    });
+
+    items.push({
+      label: 'Quick one-shot reminder',
+      click: () => {
+        if (this.onQuickReminder) {
+          this.onQuickReminder();
         }
       },
     });

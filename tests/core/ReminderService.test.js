@@ -916,4 +916,188 @@ describe('ReminderService', () => {
       ).not.toThrow();
     });
   });
+
+  describe('one-shot reminders and default sounds', () => {
+    it('plays default sound for one-shots and respects useDefaultSound=false @spec:AC-010', async () => {
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockAudioPlayer.pickRandom.mockReturnValue('/sounds/default-alert-1.mp3');
+
+      const fireAt = new Date(Date.now() + 10000).toISOString();
+      await service.addReminder({
+        id: 'oneshot-sound-on',
+        title: 'Sound On',
+        oneShot: true,
+        fireAt,
+      });
+
+      await jest.advanceTimersByTimeAsync(10000);
+      expect(mockAudioPlayer.pickRandom).toHaveBeenCalledWith('default', 'alert');
+      expect(mockAudioPlayer.play).toHaveBeenCalledWith('/sounds/default-alert-1.mp3');
+
+      mockAudioPlayer.pickRandom.mockClear();
+      mockAudioPlayer.play.mockClear();
+
+      await service.addReminder({
+        id: 'oneshot-silent',
+        title: 'Silent',
+        oneShot: true,
+        fireAt: new Date(Date.now() + 5000).toISOString(),
+        useDefaultSound: false,
+      });
+
+      await jest.advanceTimersByTimeAsync(5000);
+      expect(mockAudioPlayer.pickRandom).not.toHaveBeenCalled();
+      expect(mockAudioPlayer.play).not.toHaveBeenCalled();
+
+      // Recurring reminder with useDefaultSound: false passes fallbackToDefault: false
+      service.config.reminders.push({
+        id: 'water-silent',
+        title: 'Water Silent',
+        cron: '0 * * * *',
+        useDefaultSound: false,
+      });
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+      service.resolveReminder('water-silent', 'done');
+      expect(mockAudioPlayer.pickRandom).toHaveBeenCalledWith('water-silent', 'done', {
+        fallbackToDefault: false,
+      });
+    });
+
+    it('schedules one-shot via fireAt without calling cron scheduler and handles snooze without cron reschedule @spec:AC-011', async () => {
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockAudioPlayer.pickRandom.mockReturnValue('/sounds/default-snooze-1.mp3');
+
+      const fireAt = new Date(Date.now() + 15000).toISOString();
+      await service.addReminder({
+        id: 'oneshot-oven',
+        title: 'Turn off oven',
+        oneShot: true,
+        fireAt,
+        snoozeInterval: 30000,
+        autoSnoozeTimeout: 0,
+      });
+
+      expect(mockScheduler.getNextFireTime).not.toHaveBeenCalled();
+      expect(service.activeReminders.has('timeout_oneshot-oven')).toBe(true);
+
+      await jest.advanceTimersByTimeAsync(15000);
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'oneshot-oven' }),
+        expect.any(Number)
+      );
+      expect(service.activeReminders.has('timeout_oneshot-oven')).toBe(false);
+
+      // Snooze schedules another timeout without calling scheduler.getInterval
+      service.resolveReminder('oneshot-oven', 'snooze');
+      expect(service.activeReminders.has('timeout_oneshot-oven')).toBe(true);
+
+      await jest.advanceTimersByTimeAsync(30000);
+      expect(mockScheduler.getInterval).not.toHaveBeenCalled();
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledTimes(2);
+    });
+
+    it('fires immediately when one-shot fireAt or restored state time is already in the past @spec:AC-011', async () => {
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      // Case 1: Restored from stateStore with past timestamp
+      service.config.reminders = [
+        {
+          id: 'oneshot-past-state',
+          title: 'Past State',
+          oneShot: true,
+          fireAt: new Date(Date.now() + 60000).toISOString(),
+        },
+      ];
+      mockStateStore.getNextFireTime.mockResolvedValue('2020-01-01T00:00:00');
+      await service.start();
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'oneshot-past-state' }),
+        expect.any(Number)
+      );
+      expect(mockScheduler.getNextFireTime).not.toHaveBeenCalled();
+
+      // Case 2: No stateStore entry, fireAt <= now
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      await service.addReminder({
+        id: 'oneshot-past-fireat',
+        title: 'Past FireAt',
+        oneShot: true,
+        fireAt: new Date(Date.now() - 5000).toISOString(),
+      });
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'oneshot-past-fireat' }),
+        expect.any(Number)
+      );
+    });
+
+    it('deletes only the resolved one-shot on done and triggers onOneShotDone while preserving other one-shots @spec:AC-012', async () => {
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockAudioPlayer.pickRandom.mockReturnValue('/sounds/default-done-1.mp3');
+
+      const onDismiss = jest.fn();
+      const onOneShotDone = jest.fn();
+      service.onDismiss = onDismiss;
+      service.onOneShotDone = onOneShotDone;
+
+      await service.addReminder({
+        id: 'oneshot-1',
+        title: 'Oven',
+        oneShot: true,
+        fireAt: new Date(Date.now() + 10000).toISOString(),
+      });
+      await service.addReminder({
+        id: 'oneshot-2',
+        title: 'Laundry',
+        oneShot: true,
+        fireAt: new Date(Date.now() + 20000).toISOString(),
+      });
+
+      service.queue.push({ id: 'oneshot-1', title: 'Oven', oneShot: true });
+      service.resolveReminder('oneshot-1', 'done');
+
+      expect(service.activeReminders.has('timeout_oneshot-1')).toBe(false);
+      expect(service.activeReminders.has('timeout_oneshot-2')).toBe(true);
+      expect(service.queue.some((r) => r.id === 'oneshot-1')).toBe(false);
+      expect(service.config.reminders.find((r) => r.id === 'oneshot-1')).toBeUndefined();
+      expect(service.config.reminders.find((r) => r.id === 'oneshot-2')).toBeDefined();
+      expect(mockStateStore.clearNextFireTime).toHaveBeenCalledWith('oneshot-1');
+      expect(onOneShotDone).toHaveBeenCalledWith('oneshot-1');
+      expect(onDismiss).toHaveBeenCalled();
+
+      // Works without onDismiss or onOneShotDone set
+      service.onDismiss = null;
+      service.onOneShotDone = null;
+      expect(() => service.resolveReminder('oneshot-2', 'done')).not.toThrow();
+      expect(service.config.reminders.find((r) => r.id === 'oneshot-2')).toBeUndefined();
+    });
+
+    it('reschedules one-shot using new fireAt on updateReminder instead of stale stateStore entry @spec:AC-011', async () => {
+      mockStateStore.getNextFireTime.mockResolvedValue(new Date(Date.now() + 5000).toISOString());
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.addReminder({
+        id: 'oneshot-edit',
+        title: 'Oven',
+        oneShot: true,
+        fireAt: new Date(Date.now() + 5000).toISOString(),
+      });
+
+      const updatedFireAt = new Date(Date.now() + 60000).toISOString();
+      await service.updateReminder('oneshot-edit', {
+        id: 'oneshot-edit',
+        title: 'Oven Updated',
+        oneShot: true,
+        fireAt: updatedFireAt,
+      });
+
+      await jest.advanceTimersByTimeAsync(10000);
+      expect(mockReminderWindow.showReminder).not.toHaveBeenCalled();
+
+      await jest.advanceTimersByTimeAsync(50000);
+      expect(mockReminderWindow.showReminder).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'oneshot-edit', title: 'Oven Updated' }),
+        expect.any(Number)
+      );
+    });
+  });
 });

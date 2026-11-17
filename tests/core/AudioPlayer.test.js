@@ -209,4 +209,42 @@ describe('AudioPlayer', () => {
       await promise;
     });
   });
+
+  describe('default sound fallback', () => {
+    it('falls back to default-{type}-{N}.mp3 when id has no sound files @spec:AC-010', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readdirSync.mockReturnValue(['default-alert-1.mp3', 'other-alert-1.mp3']);
+
+      const result = player.pickRandom('stretch', 'alert');
+
+      expect(result).toMatch(/default-alert-1\.mp3$/);
+    });
+
+    it('prefers id-specific sounds over default sounds @spec:AC-010', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readdirSync.mockReturnValue(['default-alert-1.mp3', 'stretch-alert-1.mp3']);
+
+      const result = player.pickRandom('stretch', 'alert');
+
+      expect(result).toMatch(/stretch-alert-1\.mp3$/);
+    });
+
+    it('skips fallback when fallbackToDefault is false @spec:AC-010', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readdirSync.mockReturnValue(['default-alert-1.mp3']);
+
+      const result = player.pickRandom('stretch', 'alert', { fallbackToDefault: false });
+
+      expect(result).toBeNull();
+    });
+
+    it('matches default directly and returns null when no default sound exists @spec:AC-010', () => {
+      fs.existsSync.mockReturnValue(true);
+      fs.readdirSync.mockReturnValue(['default-alert-1.mp3']);
+      expect(player.pickRandom('default', 'alert')).toMatch(/default-alert-1\.mp3$/);
+
+      fs.readdirSync.mockReturnValue(['other-alert-1.mp3']);
+      expect(player.pickRandom('default', 'alert')).toBeNull();
+    });
+  });
 });

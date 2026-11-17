@@ -57,16 +57,17 @@ class AudioPlayer {
     }
   }
 
-  pickRandom(id, type) {
+  pickRandom(id, type, { fallbackToDefault = true } = {}) {
     if (!fs.existsSync(SOUNDS_DIR)) {
       return null;
     }
 
-    const files = fs.readdirSync(SOUNDS_DIR).filter((file) => {
-      if (!file.endsWith('.mp3')) return false;
-      const name = file.replace('.mp3', '');
-      return name === `${id}-${type}-1` || name.match(new RegExp(`^${this.#escapeRegex(id)}-${this.#escapeRegex(type)}-\\d+$`));
-    });
+    const allFiles = fs.readdirSync(SOUNDS_DIR);
+    let files = this.#matchSoundFiles(allFiles, id, type);
+
+    if (files.length === 0 && fallbackToDefault && id !== 'default') {
+      files = this.#matchSoundFiles(allFiles, 'default', type);
+    }
 
     if (files.length === 0) {
       return null;
@@ -74,6 +75,15 @@ class AudioPlayer {
 
     const random = files[Math.floor(Math.random() * files.length)];
     return path.join(SOUNDS_DIR, random);
+  }
+
+  #matchSoundFiles(allFiles, prefix, type) {
+    const pattern = new RegExp(`^${this.#escapeRegex(prefix)}-${this.#escapeRegex(type)}-\\d+$`);
+    return allFiles.filter((file) => {
+      if (!file.endsWith('.mp3')) return false;
+      const name = file.replace('.mp3', '');
+      return pattern.test(name);
+    });
   }
 
   #escapeRegex(str) {

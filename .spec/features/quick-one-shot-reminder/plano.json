@@ -1,0 +1,140 @@
+{
+  "version": 2,
+  "engine": ".agents/skills/onp-spec-driven/scripts/onp-spec.mjs",
+  "config": {
+    "maxParalelas": 3,
+    "model": null,
+    "esforco": "medium",
+    "permissionMode": "acceptEdits",
+    "allowedTools": null,
+    "sandbox": "workspace-write",
+    "quotaCommand": null,
+    "modelsCommand": null,
+    "notifications": {
+      "enabled": false,
+      "command": null
+    },
+    "quota": {
+      "thresholdPercent": 5,
+      "pollIntervalMs": 60000
+    }
+  },
+  "testCommand": "npx jest --json",
+  "runId": "task-bar-reminder-quick-one-shot-reminder-mwl4g7s2-ecf331b6",
+  "feature": "quick-one-shot-reminder",
+  "agent": "antigravity",
+  "modo": "sequencial",
+  "paralelizar": null,
+  "modeloForcado": null,
+  "esforcoForcado": null,
+  "geradoEm": "2026-11-17 20:05",
+  "createdAt": "2026-11-17T20:05:09.603Z",
+  "branchTrabalho": "spec/quick-one-shot-reminder",
+  "baseDir": ".spec/features/quick-one-shot-reminder",
+  "artifactDir": ".spec/features/quick-one-shot-reminder",
+  "specDir": ".spec",
+  "repoName": "task-bar-reminder",
+  "logsDir": "../onp-worktrees/task-bar-reminder-quick-one-shot-reminder-logs",
+  "ondas": [],
+  "faixas": [],
+  "sequenciais": [
+    {
+      "id": "T-006",
+      "titulo": "Implementar geração de ID, validação e normalização de lembretes one-shot e useDefaultSound no ConfigLoader",
+      "modelo": null,
+      "esforco": "medium",
+      "arquivos": [
+        "src/core/ConfigLoader.js",
+        "tests/core/ConfigLoader.test.js"
+      ],
+      "refs": [
+        "US-006",
+        "AC-008",
+        "AC-009",
+        "US-007",
+        "AC-010"
+      ],
+      "prompt": "Você executa UMA tarefa da feature \"quick-one-shot-reminder\" (fluxo onp-spec, spec-anchored).\nLeia primeiro: .spec/features/quick-one-shot-reminder/spec.md, .spec/features/quick-one-shot-reminder/tasks.md e .spec/constituicao.md.\n\nSua tarefa (somente ela):\nT-006 — \"Implementar geração de ID, validação e normalização de lembretes one-shot e useDefaultSound no ConfigLoader\"\n  critérios/refs: AC-008 (Gerar IDs únicos automaticamente e validar lembretes one-shot com delaySeconds ou fireAt), AC-009 (Permitir múltiplos lembretes one-shot simultâneos preservando configurações padrão e overrides), AC-010 (Usar sounds/default-{type}-{N}.mp3 como fallback e respeitar a flag useDefaultSound)\n  arquivos permitidos (e seus testes): src/core/ConfigLoader.js, tests/core/ConfigLoader.test.js\n  mensagem de commit: \"T-006 quick-one-shot-reminder: Implementar geração de ID, validação e normalização de lembretes one-shot e useDefaultSound no ConfigLoader\"\n\nRegras inegociáveis:\n- Todo critério de aceite referenciado vira teste com @spec:AC-xxx no título.\n- NUNCA enfraqueça, pule (skip/todo) ou apague um teste para passar — teste pulado não é prova e o audit acusa.\n- Rode os testes localmente com `npx jest --json` até passarem.\n- NÃO edite tasks.md, NÃO rode onp-spec verify/audit e NÃO toque em outras tarefas — o orquestrador cuida disso.\n- Specs, PRDs, ADRs, TDDs e documentos existentes são somente leitura. Nunca reformate, migre ou sobrescreva esses arquivos; mudanças de requisito exigem uma proposta separada e resposta do cliente.\n- Leia PRD, ADR, design.md e research.md quando existirem; pare e solicite decisão nativa se houver conflito de domínio/requisito/decisão. Nunca decida conflitos em headless.\n- Ao retomar após limite, inspecione git diff/log e continue o trabalho parcial sem repetir operações já concluídas.\n- Ao final de CADA tarefa: `git add` só no que você tocou e um commit próprio."
+    },
+    {
+      "id": "T-007",
+      "titulo": "Implementar fallback para sounds/default-{type}-{N}.mp3 no AudioPlayer",
+      "modelo": null,
+      "esforco": "medium",
+      "arquivos": [
+        "src/core/AudioPlayer.js",
+        "tests/core/AudioPlayer.test.js"
+      ],
+      "refs": [
+        "US-007",
+        "AC-010"
+      ],
+      "prompt": "Você executa UMA tarefa da feature \"quick-one-shot-reminder\" (fluxo onp-spec, spec-anchored).\nLeia primeiro: .spec/features/quick-one-shot-reminder/spec.md, .spec/features/quick-one-shot-reminder/tasks.md e .spec/constituicao.md.\n\nSua tarefa (somente ela):\nT-007 — \"Implementar fallback para sounds/default-{type}-{N}.mp3 no AudioPlayer\"\n  critérios/refs: AC-010 (Usar sounds/default-{type}-{N}.mp3 como fallback e respeitar a flag useDefaultSound)\n  arquivos permitidos (e seus testes): src/core/AudioPlayer.js, tests/core/AudioPlayer.test.js\n  mensagem de commit: \"T-007 quick-one-shot-reminder: Implementar fallback para sounds/default-{type}-{N}.mp3 no AudioPlayer\"\n\nRegras inegociáveis:\n- Todo critério de aceite referenciado vira teste com @spec:AC-xxx no título.\n- NUNCA enfraqueça, pule (skip/todo) ou apague um teste para passar — teste pulado não é prova e o audit acusa.\n- Rode os testes localmente com `npx jest --json` até passarem.\n- NÃO edite tasks.md, NÃO rode onp-spec verify/audit e NÃO toque em outras tarefas — o orquestrador cuida disso.\n- Specs, PRDs, ADRs, TDDs e documentos existentes são somente leitura. Nunca reformate, migre ou sobrescreva esses arquivos; mudanças de requisito exigem uma proposta separada e resposta do cliente.\n- Leia PRD, ADR, design.md e research.md quando existirem; pare e solicite decisão nativa se houver conflito de domínio/requisito/decisão. Nunca decida conflitos em headless.\n- Ao retomar após limite, inspecione git diff/log e continue o trabalho parcial sem repetir operações já concluídas.\n- Ao final de CADA tarefa: `git add` só no que você tocou e um commit próprio."
+    },
+    {
+      "id": "T-008",
+      "titulo": "Implementar ciclo de vida one-shot, seleção de som padrão e limpeza automática em Done no ReminderService",
+      "modelo": null,
+      "esforco": "medium",
+      "arquivos": [
+        "src/core/ReminderService.js",
+        "tests/core/ReminderService.test.js"
+      ],
+      "refs": [
+        "US-007",
+        "AC-010",
+        "US-008",
+        "AC-011",
+        "AC-012"
+      ],
+      "prompt": "Você executa UMA tarefa da feature \"quick-one-shot-reminder\" (fluxo onp-spec, spec-anchored).\nLeia primeiro: .spec/features/quick-one-shot-reminder/spec.md, .spec/features/quick-one-shot-reminder/tasks.md e .spec/constituicao.md.\n\nSua tarefa (somente ela):\nT-008 — \"Implementar ciclo de vida one-shot, seleção de som padrão e limpeza automática em Done no ReminderService\"\n  critérios/refs: AC-010 (Usar sounds/default-{type}-{N}.mp3 como fallback e respeitar a flag useDefaultSound), AC-011 (Agendar e disparar lembrete one-shot sem reagendamento recorrente, mantendo suporte a Snooze), AC-012 (Excluir automaticamente apenas o lembrete one-shot concluído ao marcar como Done)\n  arquivos permitidos (e seus testes): src/core/ReminderService.js, tests/core/ReminderService.test.js\n  mensagem de commit: \"T-008 quick-one-shot-reminder: Implementar ciclo de vida one-shot, seleção de som padrão e limpeza automática em Done no ReminderService\"\n\nRegras inegociáveis:\n- Todo critério de aceite referenciado vira teste com @spec:AC-xxx no título.\n- NUNCA enfraqueça, pule (skip/todo) ou apague um teste para passar — teste pulado não é prova e o audit acusa.\n- Rode os testes localmente com `npx jest --json` até passarem.\n- NÃO edite tasks.md, NÃO rode onp-spec verify/audit e NÃO toque em outras tarefas — o orquestrador cuida disso.\n- Specs, PRDs, ADRs, TDDs e documentos existentes são somente leitura. Nunca reformate, migre ou sobrescreva esses arquivos; mudanças de requisito exigem uma proposta separada e resposta do cliente.\n- Leia PRD, ADR, design.md e research.md quando existirem; pare e solicite decisão nativa se houver conflito de domínio/requisito/decisão. Nunca decida conflitos em headless.\n- Ao retomar após limite, inspecione git diff/log e continue o trabalho parcial sem repetir operações já concluídas.\n- Ao final de CADA tarefa: `git add` só no que você tocou e um commit próprio."
+    },
+    {
+      "id": "T-009",
+      "titulo": "Adicionar atalho Quick one-shot reminder no Tray e notificação reminders-changed em ManageRemindersWindow",
+      "modelo": null,
+      "esforco": "medium",
+      "arquivos": [
+        "src/ui/Tray.js",
+        "src/ui/ManageRemindersWindow.js",
+        "tests/ui/Tray.test.js",
+        "tests/ui/ManageRemindersWindow.test.js"
+      ],
+      "refs": [
+        "US-009",
+        "AC-013",
+        "US-010",
+        "AC-014"
+      ],
+      "prompt": "Você executa UMA tarefa da feature \"quick-one-shot-reminder\" (fluxo onp-spec, spec-anchored).\nLeia primeiro: .spec/features/quick-one-shot-reminder/spec.md, .spec/features/quick-one-shot-reminder/tasks.md e .spec/constituicao.md.\n\nSua tarefa (somente ela):\nT-009 — \"Adicionar atalho Quick one-shot reminder no Tray e notificação reminders-changed em ManageRemindersWindow\"\n  critérios/refs: AC-013 (Abrir a visualização Quick Reminder pelo menu da bandeja (Tray) e pelo cabeçalho), AC-014 (Notificar a janela de gerenciamento quando a lista de lembretes mudar em tempo de execução)\n  arquivos permitidos (e seus testes): src/ui/Tray.js, src/ui/ManageRemindersWindow.js, tests/ui/Tray.test.js, tests/ui/ManageRemindersWindow.test.js\n  mensagem de commit: \"T-009 quick-one-shot-reminder: Adicionar atalho Quick one-shot reminder no Tray e notificação reminders-changed em ManageRemindersWindow\"\n\nRegras inegociáveis:\n- Todo critério de aceite referenciado vira teste com @spec:AC-xxx no título.\n- NUNCA enfraqueça, pule (skip/todo) ou apague um teste para passar — teste pulado não é prova e o audit acusa.\n- Rode os testes localmente com `npx jest --json` até passarem.\n- NÃO edite tasks.md, NÃO rode onp-spec verify/audit e NÃO toque em outras tarefas — o orquestrador cuida disso.\n- Specs, PRDs, ADRs, TDDs e documentos existentes são somente leitura. Nunca reformate, migre ou sobrescreva esses arquivos; mudanças de requisito exigem uma proposta separada e resposta do cliente.\n- Leia PRD, ADR, design.md e research.md quando existirem; pare e solicite decisão nativa se houver conflito de domínio/requisito/decisão. Nunca decida conflitos em headless.\n- Ao retomar após limite, inspecione git diff/log e continue o trabalho parcial sem repetir operações já concluídas.\n- Ao final de CADA tarefa: `git add` só no que você tocou e um commit próprio."
+    },
+    {
+      "id": "T-010",
+      "titulo": "Construir view Quick Reminder, checkbox Use default sound e wiring no main.js",
+      "modelo": null,
+      "esforco": "medium",
+      "arquivos": [
+        "src/ui/manage-reminders.html",
+        "src/main.js"
+      ],
+      "refs": [
+        "US-006",
+        "AC-008",
+        "AC-009",
+        "US-007",
+        "AC-010",
+        "US-008",
+        "AC-011",
+        "AC-012",
+        "US-009",
+        "AC-013",
+        "US-010",
+        "AC-014"
+      ],
+      "prompt": "Você executa UMA tarefa da feature \"quick-one-shot-reminder\" (fluxo onp-spec, spec-anchored).\nLeia primeiro: .spec/features/quick-one-shot-reminder/spec.md, .spec/features/quick-one-shot-reminder/tasks.md e .spec/constituicao.md.\n\nSua tarefa (somente ela):\nT-010 — \"Construir view Quick Reminder, checkbox Use default sound e wiring no main.js\"\n  critérios/refs: AC-008 (Gerar IDs únicos automaticamente e validar lembretes one-shot com delaySeconds ou fireAt), AC-009 (Permitir múltiplos lembretes one-shot simultâneos preservando configurações padrão e overrides), AC-010 (Usar sounds/default-{type}-{N}.mp3 como fallback e respeitar a flag useDefaultSound), AC-011 (Agendar e disparar lembrete one-shot sem reagendamento recorrente, mantendo suporte a Snooze), AC-012 (Excluir automaticamente apenas o lembrete one-shot concluído ao marcar como Done), AC-013 (Abrir a visualização Quick Reminder pelo menu da bandeja (Tray) e pelo cabeçalho), AC-014 (Notificar a janela de gerenciamento quando a lista de lembretes mudar em tempo de execução)\n  arquivos permitidos (e seus testes): src/ui/manage-reminders.html, src/main.js\n  mensagem de commit: \"T-010 quick-one-shot-reminder: Construir view Quick Reminder, checkbox Use default sound e wiring no main.js\"\n\nRegras inegociáveis:\n- Todo critério de aceite referenciado vira teste com @spec:AC-xxx no título.\n- NUNCA enfraqueça, pule (skip/todo) ou apague um teste para passar — teste pulado não é prova e o audit acusa.\n- Rode os testes localmente com `npx jest --json` até passarem.\n- NÃO edite tasks.md, NÃO rode onp-spec verify/audit e NÃO toque em outras tarefas — o orquestrador cuida disso.\n- Specs, PRDs, ADRs, TDDs e documentos existentes são somente leitura. Nunca reformate, migre ou sobrescreva esses arquivos; mudanças de requisito exigem uma proposta separada e resposta do cliente.\n- Leia PRD, ADR, design.md e research.md quando existirem; pare e solicite decisão nativa se houver conflito de domínio/requisito/decisão. Nunca decida conflitos em headless.\n- Ao retomar após limite, inspecione git diff/log e continue o trabalho parcial sem repetir operações já concluídas.\n- Ao final de CADA tarefa: `git add` só no que você tocou e um commit próprio."
+    }
+  ],
+  "concluidas": [],
+  "avisos": [],
+  "sourceFingerprint": "2f5c1877c5fd220588b23f6fa12ad7398b677748aee518b12d84206af62af6c9"
+}

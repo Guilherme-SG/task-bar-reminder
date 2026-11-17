@@ -16,6 +16,7 @@ class ReminderService {
     this.autoDismissTimers = new Map();
     this.onShow = null;
     this.onDismiss = null;
+    this.onOneShotDone = null;
   }
 
   #getSnoozeInterval(reminder) {
@@ -47,15 +48,19 @@ class ReminderService {
     await this.#initReminder(reminder);
   }
 
-  async updateReminder(id, updatedReminder) {
-    const index = this.config.reminders.findIndex((r) => r.id === id);
-    if (index === -1) return;
-
+  #clearActiveTimeout(id) {
     const key = `${TIMEOUT_KEY_PREFIX}${id}`;
     if (this.activeReminders.has(key)) {
       clearTimeout(this.activeReminders.get(key));
       this.activeReminders.delete(key);
     }
+  }
+
+  async updateReminder(id, updatedReminder) {
+    const index = this.config.reminders.findIndex((r) => r.id === id);
+    if (index === -1) return;
+
+    this.#clearActiveTimeout(id);
 
     this.#cancelAutoDismiss(id);
 
@@ -66,6 +71,11 @@ class ReminderService {
       this.focusGuard.start();
     }
 
+    if (updatedReminder.oneShot) {
+      this.#scheduleNext(updatedReminder);
+      return;
+    }
+
     await this.#initReminder(updatedReminder);
   }
 
@@ -73,11 +83,7 @@ class ReminderService {
     const index = this.config.reminders.findIndex((r) => r.id === id);
     if (index === -1) return;
 
-    const key = `${TIMEOUT_KEY_PREFIX}${id}`;
-    if (this.activeReminders.has(key)) {
-      clearTimeout(this.activeReminders.get(key));
-      this.activeReminders.delete(key);
-    }
+    this.#clearActiveTimeout(id);
 
     this.#cancelAutoDismiss(id);
 
@@ -102,7 +108,9 @@ class ReminderService {
 
       if (remaining <= 0) {
         this.#fire(reminder);
-        this.#scheduleNext(reminder);
+        if (!reminder.oneShot) {
+          this.#scheduleNext(reminder);
+        }
         return;
       }
 
@@ -114,6 +122,16 @@ class ReminderService {
   }
 
   #scheduleNext(reminder) {
+    if (reminder.oneShot) {
+      const delay = new Date(reminder.fireAt).getTime() - Date.now();
+      if (delay <= 0) {
+        this.#fire(reminder);
+        return;
+      }
+      this.#scheduleTimeout(reminder, delay);
+      return;
+    }
+
     const nextFireTime = this.scheduler.getNextFireTime(reminder.cron);
     const delay = nextFireTime.getTime() - Date.now();
 
@@ -141,7 +159,8 @@ class ReminderService {
       clearTimeout(this.activeReminders.get(key));
     }
 
-    const callback = onFire || (() => this.#scheduleNext(reminder));
+    const defaultCallback = reminder.oneShot ? () => {} : () => this.#scheduleNext(reminder);
+    const callback = onFire || defaultCallback;
 
     const timeout = setTimeout(() => {
       this.activeReminders.delete(key);
@@ -185,7 +204,14 @@ class ReminderService {
   }
 
   #playSound(reminder, soundType) {
-    const sound = this.audioPlayer.pickRandom(reminder.id, soundType);
+    if (reminder.oneShot && reminder.useDefaultSound === false) {
+      return;
+    }
+    const sound = reminder.oneShot
+      ? this.audioPlayer.pickRandom('default', soundType)
+      : reminder.useDefaultSound === false
+        ? this.audioPlayer.pickRandom(reminder.id, soundType, { fallbackToDefault: false })
+        : this.audioPlayer.pickRandom(reminder.id, soundType);
     if (sound) {
       this.audioPlayer.play(sound);
     }
@@ -241,10 +267,20 @@ class ReminderService {
     if (action === REMINDER_ACTIONS.DONE) {
       this.#playSound(reminder, 'done');
       this.reminderWindow.hide();
+
+      if (reminder.oneShot) {
+        this.#clearActiveTimeout(reminderId);
+        this.queue = this.queue.filter((r) => r.id !== reminderId);
+        this.config.reminders = this.config.reminders.filter((r) => r.id !== reminderId);
+        this.stateStore.clearNextFireTime(reminderId);
+        if (this.onDismiss) this.onDismiss(this.getActiveReminders());
+        if (this.onOneShotDone) this.onOneShotDone(reminderId);
+      }
     } else if (action === REMINDER_ACTIONS.SNOOZE) {
       this.#playSound(reminder, 'snooze');
       this.reminderWindow.hide();
-      this.#scheduleTimeout(reminder, this.#getSnoozeInterval(reminder), () => this.#scheduleNextFromNow(reminder));
+      const afterSnooze = reminder.oneShot ? () => {} : () => this.#scheduleNextFromNow(reminder);
+      this.#scheduleTimeout(reminder, this.#getSnoozeInterval(reminder), afterSnooze);
     }
   }
 

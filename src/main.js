@@ -121,6 +121,10 @@ app.whenReady().then(async () => {
     manageRemindersWindow.show('add');
   };
 
+  tray.onQuickReminder = () => {
+    manageRemindersWindow.show('quick');
+  };
+
   tray.onManageReminders = () => {
     manageRemindersWindow.show('list');
   };
@@ -152,6 +156,15 @@ app.whenReady().then(async () => {
 
   reminderService.onShow = updateTray;
   reminderService.onDismiss = updateTray;
+  reminderService.onOneShotDone = (id) => {
+    try {
+      ConfigLoader.deleteReminder(id);
+    } catch {
+      // Already deleted
+    }
+    updateTray(reminderService.getActiveReminders());
+    manageRemindersWindow.notifyRemindersChanged();
+  };
 
   reminderService.start();
 });

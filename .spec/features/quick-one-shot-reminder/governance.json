@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "large": true,
+  "documentationContract": "onp-docs-v1",
+  "domains": [
+    "config",
+    "core",
+    "tray",
+    "ui"
+  ],
+  "clientRequest": "/grill-me /onp-spec-driven Now, I need a new feature: a quick one shot reminder. When the user just need one time reminder like turn",
+  "review": {
+    "summary": "Revisão semântica concluída: quick-one-shot-reminder estende os módulos de configure-defaults-panel de forma aditiva e compatível, preservando todos os contratos anteriores.",
+    "reviewer": "antigravity-session",
+    "conflicts": [
+      {
+        "id": "impacto:configure-defaults-panel",
+        "automatic": true,
+        "feature": "configure-defaults-panel",
+        "summary": "A mudança interfere no domínio da feature configure-defaults-panel.",
+        "files": [
+          "src/core/AudioPlayer.js",
+          "src/core/ConfigLoader.js",
+          "src/core/ReminderService.js",
+          "src/main.js",
+          "src/ui/ManageRemindersWindow.js",
+          "src/ui/Tray.js",
+          "src/ui/manage-reminders.html",
+          "tests/core/AudioPlayer.test.js",
+          "tests/core/ConfigLoader.test.js",
+          "tests/core/ReminderService.test.js",
+          "tests/ui/ManageRemindersWindow.test.js",
+          "tests/ui/Tray.test.js"
+        ],
+        "domains": [
+          "config",
+          "core",
+          "tray",
+          "ui"
+        ],
+        "rule": ".spec/features/configure-defaults-panel/prd.md"
+      }
+    ],
+    "fingerprint": "667ed7e4902247482f10affee21f4fb55a521d6a4ef5d613b31355fecf1c7358",
+    "ownFingerprint": "48b1e037579004d6578c142a7c5053e037b16c26c6cdaf023b0cceca60cf2199",
+    "reviewedAt": "2026-11-17T20:05:09.090Z",
+    "documents": [
+      ".spec/features/configure-defaults-panel/prd.md",
+      ".spec/features/configure-defaults-panel/adr.md",
+      ".spec/features/configure-defaults-panel/design.md",
+      ".spec/features/configure-defaults-panel/spec.md",
+      ".spec/features/configure-defaults-panel/tasks.md",
+      ".spec/features/configure-defaults-panel/research.md",
+      ".spec/features/quick-one-shot-reminder/prd.md",
+      ".spec/features/quick-one-shot-reminder/adr.md",
+      ".spec/features/quick-one-shot-reminder/design.md",
+      ".spec/features/quick-one-shot-reminder/spec.md",
+      ".spec/features/quick-one-shot-reminder/tasks.md",
+      ".spec/features/quick-one-shot-reminder/research.md",
+      ".spec/constituicao.md",
+      "onpspec.config.json"
+    ]
+  },
+  "decisions": [
+    {
+      "conflictId": "impacto:configure-defaults-panel",
+      "choice": "prosseguir",
+      "answer": "(Recommended) Yes, proceed ('prosseguir') with full onp-spec-driven specification and sequential implementation supporting unlimited concurrent quick reminders",
+      "source": "ask_question tool (2026-11-17T17:00:23-03:00)",
+      "fingerprint": "667ed7e4902247482f10affee21f4fb55a521d6a4ef5d613b31355fecf1c7358",
+      "ownFingerprint": "48b1e037579004d6578c142a7c5053e037b16c26c6cdaf023b0cceca60cf2199",
+      "conflictFingerprint": "b2810fc8ee38e27451e52565bccbae813ead56ee38e104e4ba36a197aea4626d",
+      "answeredAt": "2026-11-17T20:05:09.335Z"
+    }
+  ]
+}

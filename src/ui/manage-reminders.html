@@ -857,6 +857,79 @@
       color: #6e7681;
       margin-top: 2px;
     }
+
+    .meta-tag.oneshot {
+      color: #fde047;
+      background: rgba(234, 179, 8, 0.12);
+      border-color: rgba(234, 179, 8, 0.3);
+    }
+
+    .preset-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .preset-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #c9d1d9;
+      padding: 5px 11px;
+      border-radius: 14px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .preset-chip:hover {
+      background: rgba(59, 130, 246, 0.16);
+      border-color: rgba(59, 130, 246, 0.45);
+      color: #ffffff;
+    }
+
+    .preset-chip.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: #ffffff;
+    }
+
+    details.advanced-options {
+      background: rgba(13, 17, 23, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    details.advanced-options summary {
+      font-size: 12px;
+      font-weight: 500;
+      color: #c9d1d9;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .advanced-options-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    input[type="time"] {
+      background: rgba(13, 17, 23, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: #e6e6e6;
+      font-size: 13px;
+      padding: 8px 10px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    input[type="time"]:focus {
+      border-color: #3b82f6;
+      background: rgba(13, 17, 23, 1);
+    }
   </style>
 </head>
 <body>
@@ -867,6 +940,7 @@
         <span class="title-bar-title" id="windowTitle">Manage Reminders</span>
       </div>
       <div class="title-bar-actions">
+        <button class="btn-header primary" id="quickReminderBtn" title="Create a quick one-shot reminder">⚡ Quick Reminder</button>
         <button class="btn-header primary" id="addNewReminderBtn" title="Create a new reminder">+ Add Reminder</button>
         <button class="btn-header" id="headerSoundsBtn" title="Open sounds directory">📁 Sounds</button>
         <button class="btn-header" id="headerSettingsBtn" title="Configure default settings">⚙️ Settings</button>
@@ -961,6 +1035,13 @@
           <label for="autoSnoozeTimeout">Auto-dismiss (seconds)</label>
           <input type="number" id="autoSnoozeTimeout" min="0" placeholder="Default: 60s (0=off)">
         </div>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-inline">
+          <input type="checkbox" id="useDefaultSound" checked>
+          Use default sound (<code>sounds/default-{type}-{N}.mp3</code> when no custom sound exists)
+        </label>
       </div>
 
       <!-- Windows Installed Apps process blocker selector -->
@@ -1110,6 +1191,129 @@
         </div>
       </div>
     </div>
+
+    <!-- View 4: Quick One-Shot Reminder View -->
+    <div class="content" id="quickView" style="display: none;">
+      <div id="quickErrorBanner" class="error-banner" style="display: none;"></div>
+
+      <div class="form-group">
+        <label for="quickTitle">Title *</label>
+        <input type="text" id="quickTitle" placeholder="e.g. Turn off the oven" required>
+      </div>
+
+      <div class="form-group">
+        <div class="label-header">
+          <label for="quickTimeMode">When to Remind *</label>
+          <select id="quickTimeMode" style="padding: 4px 8px; font-size: 11px;">
+            <option value="delay">In X minutes</option>
+            <option value="clock">At clock time (HH:MM)</option>
+          </select>
+        </div>
+
+        <div class="preset-chips" id="quickPresetChips">
+          <button type="button" class="preset-chip" data-minutes="5">5m</button>
+          <button type="button" class="preset-chip" data-minutes="10">10m</button>
+          <button type="button" class="preset-chip active" data-minutes="15">15m</button>
+          <button type="button" class="preset-chip" data-minutes="30">30m</button>
+          <button type="button" class="preset-chip" data-minutes="60">1h</button>
+          <button type="button" class="preset-chip" data-minutes="120">2h</button>
+        </div>
+
+        <div class="form-group" id="quickDelayGroup" style="margin-top: 4px;">
+          <label for="quickDelayMinutes">Minutes from now</label>
+          <input type="number" id="quickDelayMinutes" min="1" value="15" placeholder="15">
+        </div>
+
+        <div class="form-group" id="quickClockGroup" style="display: none; margin-top: 4px;">
+          <label for="quickClockTime">Time (HH:MM — today, or tomorrow if already passed)</label>
+          <input type="time" id="quickClockTime">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="quickDescription">Description <span class="label-hint">(optional)</span></label>
+        <textarea id="quickDescription" placeholder="e.g. Check top rack" rows="2"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-inline">
+          <input type="checkbox" id="quickUseDefaultSound" checked>
+          Use default sound (<code>sounds/default-{type}-{N}.mp3</code>)
+        </label>
+      </div>
+
+      <details class="advanced-options" id="quickAdvancedDetails">
+        <summary>Advanced Options (Color, Snooze, Auto-dismiss, Block When Focused)</summary>
+        <div class="advanced-options-body">
+          <div class="form-group">
+            <div class="label-header">
+              <label for="quickColorText">Card Color</label>
+              <label class="checkbox-inline">
+                <input type="checkbox" id="quickUseDefaultColor" checked>
+                Use global default (<span id="quickDefaultColorHint">#1a1a2e</span>)
+              </label>
+            </div>
+            <div class="color-row">
+              <input type="color" id="quickColorPicker" value="#1a1a2e">
+              <input type="text" id="quickColorText" value="#1a1a2e" placeholder="#1a1a2e">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="quickSnoozeInterval">Snooze (seconds)</label>
+              <input type="number" id="quickSnoozeInterval" min="0" placeholder="Default: 300s">
+            </div>
+            <div class="form-group">
+              <label for="quickAutoSnoozeTimeout">Auto-dismiss (seconds)</label>
+              <input type="number" id="quickAutoSnoozeTimeout" min="0" placeholder="Default: 60s (0=off)">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="label-header">
+              <label for="quickBlockModeSelect">Block When Focused</label>
+              <select id="quickBlockModeSelect" style="padding: 4px 8px; font-size: 11px;">
+                <option value="inherit">Use global default list</option>
+                <option value="custom">Custom app list</option>
+                <option value="none">Never block (disable)</option>
+              </select>
+            </div>
+            <div class="block-inherit-hint" id="quickBlockInheritHint">
+              Inherits global default list.
+            </div>
+            <div class="process-selector" id="quickProcessSelector">
+              <div class="process-header">
+                <div class="process-stats">
+                  <span class="badge" id="quickSelectedCountBadge">0 selected</span>
+                </div>
+                <div class="process-header-actions">
+                  <button type="button" class="icon-btn" id="quickBrowseExeBtn" title="Browse your PC for an executable file">📁 Browse .exe</button>
+                  <button type="button" class="icon-btn" id="quickRefreshProcessesBtn" title="Rescan installed and running programs">🔄 Rescan</button>
+                </div>
+              </div>
+
+              <div class="search-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="quickProcessSearch" placeholder="Search installed apps or process names...">
+              </div>
+
+              <div class="process-list-container" id="quickProcessList"></div>
+
+              <div class="custom-process-bar">
+                <input type="text" id="quickCustomProcessInput" placeholder="Add custom process (e.g. mygame)">
+                <button type="button" class="btn-secondary" id="quickAddCustomProcessBtn">+ Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <div class="footer">
+        <button type="button" class="btn-secondary" id="cancelQuickBtn">Cancel</button>
+        <button type="button" class="btn-primary" id="saveQuickBtn">Start Quick Reminder</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -1119,7 +1323,9 @@
     const listView = document.getElementById('listView');
     const formView = document.getElementById('formView');
     const settingsView = document.getElementById('settingsView');
+    const quickView = document.getElementById('quickView');
     const windowTitle = document.getElementById('windowTitle');
+    const quickReminderBtn = document.getElementById('quickReminderBtn');
     const addNewReminderBtn = document.getElementById('addNewReminderBtn');
     const headerSoundsBtn = document.getElementById('headerSoundsBtn');
     const headerSettingsBtn = document.getElementById('headerSettingsBtn');
@@ -1140,6 +1346,7 @@
     const colorText = document.getElementById('colorText');
     const snoozeInput = document.getElementById('snoozeInterval');
     const autoSnoozeInput = document.getElementById('autoSnoozeTimeout');
+    const useDefaultSoundCheckbox = document.getElementById('useDefaultSound');
     const blockModeSelect = document.getElementById('blockModeSelect');
     const blockInheritHint = document.getElementById('blockInheritHint');
     const formProcessSelectorEl = document.getElementById('formProcessSelector');
@@ -1147,6 +1354,30 @@
     const saveReminderBtn = document.getElementById('saveReminderBtn');
     const cancelFormBtn = document.getElementById('cancelFormBtn');
     const openSoundsBtn = document.getElementById('openSoundsBtn');
+
+    // Quick Reminder elements
+    const quickErrorBanner = document.getElementById('quickErrorBanner');
+    const quickTitleInput = document.getElementById('quickTitle');
+    const quickTimeModeSelect = document.getElementById('quickTimeMode');
+    const quickPresetChips = document.getElementById('quickPresetChips');
+    const quickDelayGroup = document.getElementById('quickDelayGroup');
+    const quickDelayMinutes = document.getElementById('quickDelayMinutes');
+    const quickClockGroup = document.getElementById('quickClockGroup');
+    const quickClockTime = document.getElementById('quickClockTime');
+    const quickDescriptionInput = document.getElementById('quickDescription');
+    const quickUseDefaultSoundCheckbox = document.getElementById('quickUseDefaultSound');
+    const quickAdvancedDetails = document.getElementById('quickAdvancedDetails');
+    const quickUseDefaultColorCheckbox = document.getElementById('quickUseDefaultColor');
+    const quickDefaultColorHint = document.getElementById('quickDefaultColorHint');
+    const quickColorPicker = document.getElementById('quickColorPicker');
+    const quickColorText = document.getElementById('quickColorText');
+    const quickSnoozeInput = document.getElementById('quickSnoozeInterval');
+    const quickAutoSnoozeInput = document.getElementById('quickAutoSnoozeTimeout');
+    const quickBlockModeSelect = document.getElementById('quickBlockModeSelect');
+    const quickBlockInheritHint = document.getElementById('quickBlockInheritHint');
+    const quickProcessSelectorEl = document.getElementById('quickProcessSelector');
+    const cancelQuickBtn = document.getElementById('cancelQuickBtn');
+    const saveQuickBtn = document.getElementById('saveQuickBtn');
 
     // Settings elements
     const settingsErrorBanner = document.getElementById('settingsErrorBanner');
@@ -1171,8 +1402,9 @@
     const saveSettingsBtn = document.getElementById('saveSettingsBtn');
 
     // State
-    let currentMode = 'list'; // 'list' | 'add' | 'edit' | 'settings'
+    let currentMode = 'list'; // 'list' | 'add' | 'edit' | 'settings' | 'quick'
     let editingReminderId = null;
+    let editingQuickReminderId = null;
     let idManuallyEdited = false;
     let allReminders = [];
     let availableProcesses = [];
@@ -1211,6 +1443,16 @@
       addCustomBtn: document.getElementById('settingsAddCustomProcessBtn'),
     });
 
+    const quickProcessSelector = createProcessSelector({
+      searchInput: document.getElementById('quickProcessSearch'),
+      listContainer: document.getElementById('quickProcessList'),
+      refreshBtn: document.getElementById('quickRefreshProcessesBtn'),
+      browseBtn: document.getElementById('quickBrowseExeBtn'),
+      countBadge: document.getElementById('quickSelectedCountBadge'),
+      customInput: document.getElementById('quickCustomProcessInput'),
+      addCustomBtn: document.getElementById('quickAddCustomProcessBtn'),
+    });
+
     function slugify(text) {
       return text
         .toLowerCase()
@@ -1241,56 +1483,135 @@
       });
     }
 
-    syncColorInputs(colorPicker, colorText);
+    function createColorInheritanceController({ checkboxEl, pickerEl, textEl, hintEl }) {
+      syncColorInputs(pickerEl, textEl);
+
+      function apply() {
+        const inherit = checkboxEl.checked;
+        pickerEl.disabled = inherit;
+        textEl.disabled = inherit;
+        if (inherit) {
+          const defColor = currentSettings.window.defaultColor || '#1a1a2e';
+          pickerEl.value = defColor;
+          textEl.value = defColor;
+        }
+      }
+
+      function populate(color) {
+        if (color) {
+          checkboxEl.checked = false;
+          pickerEl.value = color;
+          textEl.value = color;
+        } else {
+          checkboxEl.checked = true;
+        }
+        apply();
+      }
+
+      function updateHint(defColor) {
+        hintEl.textContent = defColor;
+        if (checkboxEl.checked) {
+          apply();
+        }
+      }
+
+      checkboxEl.addEventListener('change', apply);
+
+      return {
+        populate,
+        updateHint,
+        getValue: () => (checkboxEl.checked ? null : textEl.value.trim()),
+      };
+    }
+
+    function createBlockModeController({ selectEl, hintEl, selectorEl, processSelector }) {
+      function updateHint() {
+        const globalApps = currentSettings.blockWhenFocused || [];
+        hintEl.textContent = globalApps.length > 0
+          ? `Inherits global default list: ${globalApps.join(', ')}`
+          : 'Inherits global default list (currently none).';
+      }
+
+      function apply() {
+        const mode = selectEl.value;
+        if (mode === 'inherit') {
+          hintEl.style.display = 'block';
+          selectorEl.style.display = 'none';
+          updateHint();
+        } else if (mode === 'none') {
+          hintEl.style.display = 'block';
+          hintEl.textContent = 'Blocking disabled for this reminder (ignores global default list).';
+          selectorEl.style.display = 'none';
+        } else {
+          hintEl.style.display = 'none';
+          selectorEl.style.display = 'flex';
+        }
+      }
+
+      function populate(blockWhenFocused) {
+        if (blockWhenFocused === undefined) {
+          selectEl.value = 'inherit';
+          processSelector.setSelected([]);
+        } else if (blockWhenFocused.length === 0) {
+          selectEl.value = 'none';
+          processSelector.setSelected([]);
+        } else {
+          selectEl.value = 'custom';
+          processSelector.setSelected(blockWhenFocused);
+        }
+        apply();
+      }
+
+      function getValue() {
+        if (selectEl.value === 'inherit') return null;
+        if (selectEl.value === 'none') return [];
+        return processSelector.getSelected();
+      }
+
+      selectEl.addEventListener('change', apply);
+      return { populate, updateHint, getValue };
+    }
+
     syncColorInputs(settingDefaultColorPicker, settingDefaultColorText);
 
-    function applyColorInheritanceState() {
-      const inherit = useDefaultColorCheckbox.checked;
-      colorPicker.disabled = inherit;
-      colorText.disabled = inherit;
-      if (inherit) {
-        const defColor = currentSettings.window.defaultColor || '#1a1a2e';
-        colorPicker.value = defColor;
-        colorText.value = defColor;
-      }
-    }
+    const formColorCtrl = createColorInheritanceController({
+      checkboxEl: useDefaultColorCheckbox,
+      pickerEl: colorPicker,
+      textEl: colorText,
+      hintEl: defaultColorHint,
+    });
 
-    useDefaultColorCheckbox.addEventListener('change', applyColorInheritanceState);
+    const quickColorCtrl = createColorInheritanceController({
+      checkboxEl: quickUseDefaultColorCheckbox,
+      pickerEl: quickColorPicker,
+      textEl: quickColorText,
+      hintEl: quickDefaultColorHint,
+    });
 
-    function updateBlockInheritHint() {
-      const globalApps = currentSettings.blockWhenFocused || [];
-      blockInheritHint.textContent = globalApps.length > 0
-        ? `Inherits global default list: ${globalApps.join(', ')}`
-        : 'Inherits global default list (currently none).';
-    }
+    const formBlockCtrl = createBlockModeController({
+      selectEl: blockModeSelect,
+      hintEl: blockInheritHint,
+      selectorEl: formProcessSelectorEl,
+      processSelector: formProcessSelector,
+    });
 
-    function applyBlockModeState() {
-      const mode = blockModeSelect.value;
-      if (mode === 'inherit') {
-        blockInheritHint.style.display = 'block';
-        formProcessSelectorEl.style.display = 'none';
-        updateBlockInheritHint();
-      } else if (mode === 'none') {
-        blockInheritHint.style.display = 'block';
-        blockInheritHint.textContent = 'Blocking disabled for this reminder (ignores global default list).';
-        formProcessSelectorEl.style.display = 'none';
-      } else {
-        blockInheritHint.style.display = 'none';
-        formProcessSelectorEl.style.display = 'flex';
-      }
-    }
-
-    blockModeSelect.addEventListener('change', applyBlockModeState);
+    const quickBlockCtrl = createBlockModeController({
+      selectEl: quickBlockModeSelect,
+      hintEl: quickBlockInheritHint,
+      selectorEl: quickProcessSelectorEl,
+      processSelector: quickProcessSelector,
+    });
 
     function applySettingsHints() {
       const defColor = (currentSettings.window && currentSettings.window.defaultColor) || '#1a1a2e';
-      defaultColorHint.textContent = defColor;
+      formColorCtrl.updateHint(defColor);
+      quickColorCtrl.updateHint(defColor);
       snoozeInput.placeholder = `Default: ${currentSettings.snoozeInterval}s`;
       autoSnoozeInput.placeholder = `Default: ${currentSettings.autoSnoozeTimeout}s (0=off)`;
-      updateBlockInheritHint();
-      if (useDefaultColorCheckbox.checked) {
-        applyColorInheritanceState();
-      }
+      quickSnoozeInput.placeholder = `Default: ${currentSettings.snoozeInterval}s`;
+      quickAutoSnoozeInput.placeholder = `Default: ${currentSettings.autoSnoozeTimeout}s (0=off)`;
+      formBlockCtrl.updateHint();
+      quickBlockCtrl.updateHint();
     }
 
     async function loadSettings() {
@@ -1305,79 +1626,58 @@
       }
     }
 
+    function setActiveView(viewEl, title, showHeaderButtons) {
+      listView.style.display = viewEl === listView ? 'flex' : 'none';
+      formView.style.display = viewEl === formView ? 'flex' : 'none';
+      settingsView.style.display = viewEl === settingsView ? 'flex' : 'none';
+      quickView.style.display = viewEl === quickView ? 'flex' : 'none';
+      windowTitle.textContent = title;
+      const displayVal = showHeaderButtons ? 'inline-flex' : 'none';
+      quickReminderBtn.style.display = displayVal;
+      addNewReminderBtn.style.display = displayVal;
+      headerSettingsBtn.style.display = displayVal;
+      hideError();
+      hideQuickError();
+      hideSettingsMessages();
+    }
+
     // View Switching
     function showListView() {
       currentMode = 'list';
       editingReminderId = null;
-      windowTitle.textContent = 'Manage Reminders';
-      addNewReminderBtn.style.display = 'inline-flex';
-      headerSettingsBtn.style.display = 'inline-flex';
-      formView.style.display = 'none';
-      settingsView.style.display = 'none';
-      listView.style.display = 'flex';
-      hideError();
-      hideSettingsMessages();
+      editingQuickReminderId = null;
+      setActiveView(listView, 'Manage Reminders', true);
       loadAndRenderReminders();
     }
 
     function showFormView(mode, reminder = null) {
       currentMode = mode;
-      hideError();
-      hideSettingsMessages();
-      listView.style.display = 'none';
-      settingsView.style.display = 'none';
-      formView.style.display = 'flex';
-      addNewReminderBtn.style.display = 'none';
-      headerSettingsBtn.style.display = 'none';
+      editingQuickReminderId = null;
       applySettingsHints();
 
       if (mode === 'edit' && reminder) {
         editingReminderId = reminder.id;
-        windowTitle.textContent = `Edit Reminder: "${reminder.title}"`;
+        setActiveView(formView, `Edit Reminder: "${reminder.title}"`, false);
         saveReminderBtn.textContent = 'Update Reminder';
 
-        // Pre-fill fields
         titleInput.value = reminder.title || '';
         idInput.value = reminder.id || '';
         idInput.disabled = true;
         lockedBadge.style.display = 'inline-block';
         descInput.value = reminder.description || '';
 
-        // Cron
         const rules = Array.isArray(reminder.cron) ? reminder.cron : [reminder.cron];
         setCronExpressions(rules);
         presetSelect.value = 'custom';
 
-        // Colors
-        if (reminder.color) {
-          useDefaultColorCheckbox.checked = false;
-          colorPicker.value = reminder.color;
-          colorText.value = reminder.color;
-        } else {
-          useDefaultColorCheckbox.checked = true;
-        }
-        applyColorInheritanceState();
-
-        // Timeouts
+        formColorCtrl.populate(reminder.color);
         snoozeInput.value = reminder.snoozeInterval !== undefined ? reminder.snoozeInterval / 1000 : '';
         autoSnoozeInput.value = reminder.autoSnoozeTimeout !== undefined ? reminder.autoSnoozeTimeout / 1000 : '';
-
-        // Blocked apps
-        if (reminder.blockWhenFocused === undefined) {
-          blockModeSelect.value = 'inherit';
-          formProcessSelector.setSelected([]);
-        } else if (reminder.blockWhenFocused.length === 0) {
-          blockModeSelect.value = 'none';
-          formProcessSelector.setSelected([]);
-        } else {
-          blockModeSelect.value = 'custom';
-          formProcessSelector.setSelected(reminder.blockWhenFocused);
-        }
-        applyBlockModeState();
+        useDefaultSoundCheckbox.checked = reminder.useDefaultSound !== false;
+        formBlockCtrl.populate(reminder.blockWhenFocused);
       } else {
-        // Add mode
         editingReminderId = null;
-        windowTitle.textContent = 'Add New Reminder';
+        setActiveView(formView, 'Add New Reminder', false);
         saveReminderBtn.textContent = 'Save Reminder';
 
         titleInput.value = '';
@@ -1387,16 +1687,104 @@
         descInput.value = '';
         presetSelect.value = '*/30 * * * *';
         setCronExpressions(['*/30 * * * *']);
-        useDefaultColorCheckbox.checked = true;
-        applyColorInheritanceState();
+        formColorCtrl.populate(null);
         snoozeInput.value = '';
         autoSnoozeInput.value = '';
-        blockModeSelect.value = 'inherit';
-        formProcessSelector.setSelected([]);
-        applyBlockModeState();
+        useDefaultSoundCheckbox.checked = true;
+        formBlockCtrl.populate(undefined);
         idManuallyEdited = false;
       }
     }
+
+    function updateQuickPresetActive(minutesValue) {
+      const chips = quickPresetChips.querySelectorAll('.preset-chip');
+      chips.forEach((chip) => {
+        chip.classList.toggle('active', Number(chip.dataset.minutes) === Number(minutesValue));
+      });
+    }
+
+    function applyQuickTimeMode() {
+      const isClock = quickTimeModeSelect.value === 'clock';
+      quickDelayGroup.style.display = isClock ? 'none' : 'flex';
+      quickClockGroup.style.display = isClock ? 'flex' : 'none';
+      if (isClock) {
+        updateQuickPresetActive(null);
+      } else {
+        updateQuickPresetActive(quickDelayMinutes.value);
+      }
+    }
+
+    function defaultClockTimePlus15() {
+      const d = new Date(Date.now() + 15 * 60000);
+      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function showQuickView(reminder = null) {
+      currentMode = 'quick';
+      editingReminderId = null;
+      applySettingsHints();
+
+      if (reminder) {
+        editingQuickReminderId = reminder.id;
+        setActiveView(quickView, `Edit Quick Reminder: "${reminder.title}"`, false);
+        saveQuickBtn.textContent = 'Update Quick Reminder';
+
+        quickTitleInput.value = reminder.title || '';
+        quickDescriptionInput.value = reminder.description || '';
+        quickUseDefaultSoundCheckbox.checked = reminder.useDefaultSound !== false;
+
+        const targetDate = new Date(reminder.fireAt);
+        const remainingMinutes = Math.max(1, Math.round((targetDate.getTime() - Date.now()) / 60000));
+        quickTimeModeSelect.value = 'delay';
+        quickDelayMinutes.value = String(remainingMinutes);
+        quickClockTime.value = `${String(targetDate.getHours()).padStart(2, '0')}:${String(targetDate.getMinutes()).padStart(2, '0')}`;
+        applyQuickTimeMode();
+
+        quickColorCtrl.populate(reminder.color);
+        quickSnoozeInput.value = reminder.snoozeInterval !== undefined ? reminder.snoozeInterval / 1000 : '';
+        quickAutoSnoozeInput.value = reminder.autoSnoozeTimeout !== undefined ? reminder.autoSnoozeTimeout / 1000 : '';
+        quickBlockCtrl.populate(reminder.blockWhenFocused);
+        quickAdvancedDetails.open = Boolean(
+          reminder.color ||
+          reminder.snoozeInterval !== undefined ||
+          reminder.autoSnoozeTimeout !== undefined ||
+          reminder.blockWhenFocused !== undefined
+        );
+      } else {
+        editingQuickReminderId = null;
+        setActiveView(quickView, 'Quick One-Shot Reminder', false);
+        saveQuickBtn.textContent = 'Start Quick Reminder';
+
+        quickTitleInput.value = '';
+        quickDescriptionInput.value = '';
+        quickTimeModeSelect.value = 'delay';
+        quickDelayMinutes.value = '15';
+        quickClockTime.value = defaultClockTimePlus15();
+        applyQuickTimeMode();
+
+        quickUseDefaultSoundCheckbox.checked = true;
+        quickColorCtrl.populate(null);
+        quickSnoozeInput.value = '';
+        quickAutoSnoozeInput.value = '';
+        quickBlockCtrl.populate(undefined);
+        quickAdvancedDetails.open = false;
+        quickTitleInput.focus();
+      }
+    }
+
+    quickTimeModeSelect.addEventListener('change', applyQuickTimeMode);
+
+    quickDelayMinutes.addEventListener('input', () => {
+      updateQuickPresetActive(quickDelayMinutes.value);
+    });
+
+    quickPresetChips.addEventListener('click', (e) => {
+      const chip = e.target.closest('.preset-chip');
+      if (!chip) return;
+      quickTimeModeSelect.value = 'delay';
+      quickDelayMinutes.value = chip.dataset.minutes;
+      applyQuickTimeMode();
+    });
 
     function populateSettingsForm(settings) {
       settingFfplayPath.value = settings.ffplayPath || '';
@@ -1413,22 +1801,18 @@
     async function showSettingsView() {
       currentMode = 'settings';
       editingReminderId = null;
-      hideError();
-      hideSettingsMessages();
-      listView.style.display = 'none';
-      formView.style.display = 'none';
-      settingsView.style.display = 'flex';
-      windowTitle.textContent = 'Default Settings';
-      addNewReminderBtn.style.display = 'none';
-      headerSettingsBtn.style.display = 'none';
+      editingQuickReminderId = null;
+      setActiveView(settingsView, 'Default Settings', false);
 
       await loadSettings();
       populateSettingsForm(currentSettings);
     }
 
+    quickReminderBtn.addEventListener('click', () => showQuickView());
     addNewReminderBtn.addEventListener('click', () => showFormView('add'));
     headerSettingsBtn.addEventListener('click', showSettingsView);
     cancelFormBtn.addEventListener('click', showListView);
+    cancelQuickBtn.addEventListener('click', showListView);
     cancelSettingsBtn.addEventListener('click', showListView);
 
     // Render Reminders List
@@ -1485,7 +1869,13 @@
         const editBtn = document.createElement('button');
         editBtn.className = 'card-btn';
         editBtn.innerHTML = '✏️ Edit';
-        editBtn.addEventListener('click', () => showFormView('edit', r));
+        editBtn.addEventListener('click', () => {
+          if (r.oneShot) {
+            showQuickView(r);
+          } else {
+            showFormView('edit', r);
+          }
+        });
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'card-btn delete';
@@ -1519,13 +1909,28 @@
         const metaRow = document.createElement('div');
         metaRow.className = 'card-meta-row';
 
-        const cronRules = Array.isArray(r.cron) ? r.cron : [r.cron];
-        cronRules.forEach((rule) => {
-          const cronTag = document.createElement('span');
-          cronTag.className = 'meta-tag cron';
-          cronTag.textContent = `⏰ ${rule}`;
-          metaRow.appendChild(cronTag);
-        });
+        if (r.oneShot) {
+          const oneShotTag = document.createElement('span');
+          oneShotTag.className = 'meta-tag oneshot';
+          const fireTime = new Date(r.fireAt);
+          oneShotTag.textContent = `⚡ One-shot · ${Number.isNaN(fireTime.getTime()) ? r.fireAt : fireTime.toLocaleString()}`;
+          metaRow.appendChild(oneShotTag);
+        } else {
+          const cronRules = Array.isArray(r.cron) ? r.cron : [r.cron];
+          cronRules.forEach((rule) => {
+            const cronTag = document.createElement('span');
+            cronTag.className = 'meta-tag cron';
+            cronTag.textContent = `⏰ ${rule}`;
+            metaRow.appendChild(cronTag);
+          });
+        }
+
+        if (r.useDefaultSound === false) {
+          const soundTag = document.createElement('span');
+          soundTag.className = 'meta-tag';
+          soundTag.textContent = r.oneShot ? '🔇 Silent' : '🔇 Custom sound only';
+          metaRow.appendChild(soundTag);
+        }
 
         if (Array.isArray(r.blockWhenFocused) && r.blockWhenFocused.length > 0) {
           const blockTag = document.createElement('span');
@@ -1623,6 +2028,16 @@
       errorBanner.style.display = 'none';
     }
 
+    function showQuickError(msg) {
+      quickErrorBanner.textContent = msg;
+      quickErrorBanner.style.display = 'block';
+    }
+
+    function hideQuickError() {
+      quickErrorBanner.textContent = '';
+      quickErrorBanner.style.display = 'none';
+    }
+
     function showSettingsError(msg) {
       settingsSuccessBanner.style.display = 'none';
       settingsErrorBanner.textContent = msg;
@@ -1644,6 +2059,7 @@
 
     function closeWindow() {
       hideError();
+      hideQuickError();
       hideSettingsMessages();
       ipcRenderer.send('close-manage-reminders');
     }
@@ -1830,6 +2246,7 @@
     function renderAllProcessSelectors() {
       formProcessSelector.render();
       settingsProcessSelector.render();
+      quickProcessSelector.render();
     }
 
     async function loadProcesses(forceRefresh = false) {
@@ -1839,6 +2256,7 @@
           availableProcesses = list;
           ensureProcessesInCatalog(formProcessSelector.getSelected());
           ensureProcessesInCatalog(settingsProcessSelector.getSelected());
+          ensureProcessesInCatalog(quickProcessSelector.getSelected());
           renderAllProcessSelectors();
         }
       } catch {
@@ -2006,15 +2424,11 @@
         id,
         title,
         cron: cronRules.length === 1 ? cronRules[0] : cronRules,
-        color: useDefaultColorCheckbox.checked ? null : colorText.value.trim(),
+        color: formColorCtrl.getValue(),
         snoozeInterval: snoozeInput.value !== '' ? Number(snoozeInput.value) : null,
         autoSnoozeTimeout: autoSnoozeInput.value !== '' ? Number(autoSnoozeInput.value) : null,
-        blockWhenFocused:
-          blockModeSelect.value === 'inherit'
-            ? null
-            : blockModeSelect.value === 'none'
-              ? []
-              : formProcessSelector.getSelected(),
+        useDefaultSound: useDefaultSoundCheckbox.checked,
+        blockWhenFocused: formBlockCtrl.getValue(),
       };
 
       const description = descInput.value.trim();
@@ -2044,6 +2458,75 @@
       }
     });
 
+    // Quick One-Shot Reminder submission
+    saveQuickBtn.addEventListener('click', async () => {
+      hideQuickError();
+
+      const title = quickTitleInput.value.trim();
+      if (!title) {
+        showQuickError('Title is required');
+        return;
+      }
+
+      const quickData = {
+        title,
+        oneShot: true,
+        color: quickColorCtrl.getValue(),
+        snoozeInterval: quickSnoozeInput.value !== '' ? Number(quickSnoozeInput.value) : null,
+        autoSnoozeTimeout: quickAutoSnoozeInput.value !== '' ? Number(quickAutoSnoozeInput.value) : null,
+        useDefaultSound: quickUseDefaultSoundCheckbox.checked,
+        blockWhenFocused: quickBlockCtrl.getValue(),
+      };
+
+      const description = quickDescriptionInput.value.trim();
+      if (description) {
+        quickData.description = description;
+      }
+
+      if (quickTimeModeSelect.value === 'clock') {
+        const timeStr = quickClockTime.value;
+        if (!/^\d{2}:\d{2}$/.test(timeStr)) {
+          showQuickError('Please choose a valid HH:MM time');
+          return;
+        }
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const now = new Date();
+        const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0, 0);
+        if (target.getTime() <= now.getTime()) {
+          target.setDate(target.getDate() + 1);
+        }
+        quickData.fireAt = target.toISOString();
+      } else {
+        const mins = Number(quickDelayMinutes.value);
+        if (quickDelayMinutes.value === '' || Number.isNaN(mins) || mins <= 0) {
+          showQuickError('Minutes must be a positive number');
+          return;
+        }
+        quickData.delaySeconds = Math.round(mins * 60);
+      }
+
+      saveQuickBtn.disabled = true;
+
+      try {
+        let response;
+        if (editingQuickReminderId) {
+          response = await ipcRenderer.invoke('update-reminder', editingQuickReminderId, quickData);
+        } else {
+          response = await ipcRenderer.invoke('save-reminder', quickData);
+        }
+
+        if (response && response.success) {
+          showListView();
+        } else {
+          showQuickError((response && response.error) || 'Failed to save quick reminder');
+        }
+      } catch (err) {
+        showQuickError(err.message || 'An error occurred while saving quick reminder');
+      } finally {
+        saveQuickBtn.disabled = false;
+      }
+    });
+
     // View initialization listener
     ipcRenderer.on('init-view', async (_, { mode, reminderId }) => {
       await Promise.all([loadProcesses(), loadSettings(), loadAndRenderReminders()]);
@@ -2053,14 +2536,26 @@
       } else if (mode === 'edit' && reminderId) {
         const found = allReminders.find((r) => r.id === reminderId);
         if (found) {
-          showFormView('edit', found);
+          if (found.oneShot) {
+            showQuickView(found);
+          } else {
+            showFormView('edit', found);
+          }
         } else {
           showListView();
         }
       } else if (mode === 'settings') {
         showSettingsView();
+      } else if (mode === 'quick') {
+        showQuickView();
       } else {
         showListView();
+      }
+    });
+
+    ipcRenderer.on('reminders-changed', () => {
+      if (currentMode === 'list') {
+        loadAndRenderReminders();
       }
     });
 

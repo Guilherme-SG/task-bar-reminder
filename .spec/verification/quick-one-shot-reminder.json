@@ -1,0 +1,47 @@
+{
+  "feature": "quick-one-shot-reminder",
+  "timestamp": "2026-11-17T20:13:42.595Z",
+  "gitRev": "db2e80c",
+  "command": "npx jest --json",
+  "reporter": "jest-json",
+  "exitCode": 0,
+  "testsParsed": 345,
+  "results": {
+    "AC-008": {
+      "status": "pass",
+      "testName": "ConfigLoader one-shot reminders and useDefaultSound generates unique kebab-case IDs for one-shot reminders including empty titles and collisions @spec:AC-008 generates unique kebab-case IDs for one-shot reminders including empty titles and collisions @spec:AC-008",
+      "method": "jest-json"
+    },
+    "AC-009": {
+      "status": "pass",
+      "testName": "ConfigLoader one-shot reminders and useDefaultSound supports multiple concurrent one-shot reminders with full config overrides and load() @spec:AC-009 supports multiple concurrent one-shot reminders with full config overrides and load() @spec:AC-009",
+      "method": "jest-json"
+    },
+    "AC-010": {
+      "status": "pass",
+      "testName": "ConfigLoader one-shot reminders and useDefaultSound accepts useDefaultSound boolean on recurring and one-shot reminders @spec:AC-010 accepts useDefaultSound boolean on recurring and one-shot reminders @spec:AC-010",
+      "method": "jest-json"
+    },
+    "AC-011": {
+      "status": "pass",
+      "testName": "ReminderService one-shot reminders and default sounds schedules one-shot via fireAt without calling cron scheduler and handles snooze without cron reschedule @spec:AC-011 schedules one-shot via fireAt without calling cron scheduler and handles snooze without cron reschedule @spec:AC-011",
+      "method": "jest-json"
+    },
+    "AC-012": {
+      "status": "pass",
+      "testName": "ReminderService one-shot reminders and default sounds deletes only the resolved one-shot on done and triggers onOneShotDone while preserving other one-shots @spec:AC-012 deletes only the resolved one-shot on done and triggers onOneShotDone while preserving other one-shots @spec:AC-012",
+      "method": "jest-json"
+    },
+    "AC-013": {
+      "status": "pass",
+      "testName": "ManageRemindersWindow show and window lifecycle sends init-view with quick mode when show(\"quick\") is called @spec:AC-013 sends init-view with quick mode when show(\"quick\") is called @spec:AC-013",
+      "method": "jest-json"
+    },
+    "AC-014": {
+      "status": "pass",
+      "testName": "ManageRemindersWindow notifyRemindersChanged does nothing when window is null or destroyed @spec:AC-014 does nothing when window is null or destroyed @spec:AC-014",
+      "method": "jest-json"
+    }
+  },
+  "principles": {}
+}

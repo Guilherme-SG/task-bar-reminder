@@ -270,6 +270,15 @@ describe('ManageRemindersWindow', () => {
       });
     });
 
+    it('sends init-view with quick mode when show("quick") is called @spec:AC-013', () => {
+      manageWindow.show('quick');
+
+      expect(manageWindow.window.webContents.send).toHaveBeenCalledWith('init-view', {
+        mode: 'quick',
+        reminderId: null,
+      });
+    });
+
     it('re-creates window if previously destroyed', () => {
       manageWindow.show();
       manageWindow.window.isDestroyed.mockReturnValue(true);
@@ -330,6 +339,27 @@ describe('ManageRemindersWindow', () => {
       manageWindow.hide();
 
       expect(manageWindow.window.hide).toHaveBeenCalled();
+    });
+  });
+
+  describe('notifyRemindersChanged', () => {
+    it('does nothing when window is null or destroyed @spec:AC-014', () => {
+      expect(() => manageWindow.notifyRemindersChanged()).not.toThrow();
+
+      manageWindow.show();
+      manageWindow.window.isDestroyed.mockReturnValue(true);
+      manageWindow.window.webContents.send.mockClear();
+
+      manageWindow.notifyRemindersChanged();
+      expect(manageWindow.window.webContents.send).not.toHaveBeenCalled();
+    });
+
+    it('sends reminders-changed IPC event when window is alive @spec:AC-014', () => {
+      manageWindow.show();
+      manageWindow.window.webContents.send.mockClear();
+
+      manageWindow.notifyRemindersChanged();
+      expect(manageWindow.window.webContents.send).toHaveBeenCalledWith('reminders-changed');
     });
   });
 });
