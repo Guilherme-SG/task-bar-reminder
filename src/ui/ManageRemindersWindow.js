@@ -6,6 +6,7 @@ class ManageRemindersWindow {
   constructor() {
     this.window = null;
     this.quitting = false;
+    this.pendingView = { mode: 'list', reminderId: null };
     this.onSave = null;
     this.onUpdate = null;
     this.onDelete = null;
@@ -205,6 +206,10 @@ class ManageRemindersWindow {
 
     this.window.loadFile(path.join(__dirname, 'manage-reminders.html'));
 
+    this.window.webContents.on('did-finish-load', () => {
+      this.window.webContents.send('init-view', this.pendingView);
+    });
+
     this.window.on('close', (event) => {
       if (this.quitting) return;
       event.preventDefault();
@@ -213,13 +218,15 @@ class ManageRemindersWindow {
   }
 
   show(mode = 'list', reminderId = null) {
+    this.pendingView = { mode, reminderId };
+
     if (!this.window || this.window.isDestroyed()) {
       this.createWindow();
     }
     this.window.show();
     this.window.focus();
 
-    this.window.webContents.send('init-view', { mode, reminderId });
+    this.window.webContents.send('init-view', this.pendingView);
   }
 
   hide() {

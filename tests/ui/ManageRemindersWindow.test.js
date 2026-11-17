@@ -38,6 +38,7 @@ describe('ManageRemindersWindow', () => {
       on: jest.fn(),
       webContents: {
         send: jest.fn(),
+        on: jest.fn(),
       },
     };
     jest.clearAllMocks();
@@ -272,6 +273,21 @@ describe('ManageRemindersWindow', () => {
 
     it('sends init-view with quick mode when show("quick") is called @spec:AC-013', () => {
       manageWindow.show('quick');
+
+      expect(manageWindow.window.webContents.send).toHaveBeenCalledWith('init-view', {
+        mode: 'quick',
+        reminderId: null,
+      });
+    });
+
+    it('re-sends init-view with pendingView when webContents finishes loading', () => {
+      manageWindow.show('quick');
+      manageWindow.window.webContents.send.mockClear();
+
+      const didFinishLoadHandler = manageWindow.window.webContents.on.mock.calls.find(
+        (c) => c[0] === 'did-finish-load'
+      )[1];
+      didFinishLoadHandler();
 
       expect(manageWindow.window.webContents.send).toHaveBeenCalledWith('init-view', {
         mode: 'quick',

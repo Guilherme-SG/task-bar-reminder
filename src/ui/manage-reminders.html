@@ -2529,7 +2529,8 @@
 
     // View initialization listener
     ipcRenderer.on('init-view', async (_, { mode, reminderId }) => {
-      await Promise.all([loadProcesses(), loadSettings(), loadAndRenderReminders()]);
+      loadProcesses();
+      await Promise.all([loadSettings(), loadAndRenderReminders()]);
 
       if (mode === 'add') {
         showFormView('add');
