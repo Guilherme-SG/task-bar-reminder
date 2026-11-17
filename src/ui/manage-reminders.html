@@ -940,7 +940,7 @@
         <span class="title-bar-title" id="windowTitle">Manage Reminders</span>
       </div>
       <div class="title-bar-actions">
-        <button class="btn-header primary" id="quickReminderBtn" title="Create a quick one-shot reminder">⚡ Quick Reminder</button>
+        <button class="btn-header primary" id="quickReminderBtn" title="Add one-time reminder">⚡ Quick Reminder</button>
         <button class="btn-header primary" id="addNewReminderBtn" title="Create a new reminder">+ Add Reminder</button>
         <button class="btn-header" id="headerSoundsBtn" title="Open sounds directory">📁 Sounds</button>
         <button class="btn-header" id="headerSettingsBtn" title="Configure default settings">⚙️ Settings</button>
@@ -1192,7 +1192,7 @@
       </div>
     </div>
 
-    <!-- View 4: Quick One-Shot Reminder View -->
+    <!-- View 4: Add One-Time Reminder View -->
     <div class="content" id="quickView" style="display: none;">
       <div id="quickErrorBanner" class="error-banner" style="display: none;"></div>
 
@@ -1752,7 +1752,7 @@
         );
       } else {
         editingQuickReminderId = null;
-        setActiveView(quickView, 'Quick One-Shot Reminder', false);
+        setActiveView(quickView, 'Add One-Time Reminder', false);
         saveQuickBtn.textContent = 'Start Quick Reminder';
 
         quickTitleInput.value = '';
@@ -2458,7 +2458,7 @@
       }
     });
 
-    // Quick One-Shot Reminder submission
+    // Add One-Time Reminder submission
     saveQuickBtn.addEventListener('click', async () => {
       hideQuickError();
 

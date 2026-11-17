@@ -1,7 +1,7 @@
 {
   "feature": "configure-defaults-panel",
-  "timestamp": "2026-11-17T21:09:14.376Z",
-  "gitRev": "6e0210a",
+  "timestamp": "2026-11-17T21:50:54.860Z",
+  "gitRev": "fa7a4f9",
   "command": "npx jest --json",
   "reporter": "jest-json",
   "exitCode": 0,
@@ -24,7 +24,7 @@
     },
     "AC-004": {
       "status": "pass",
-      "testName": "AppTray updateMenu calls onOpenSettings when Settings is clicked @spec:AC-004 calls onOpenSettings when Settings is clicked @spec:AC-004",
+      "testName": "ManageRemindersWindow show and window lifecycle sends init-view with settings mode when show(\"settings\") is called @spec:AC-004 sends init-view with settings mode when show(\"settings\") is called @spec:AC-004",
       "method": "jest-json"
     },
     "AC-005": {
@@ -34,7 +34,7 @@
     },
     "AC-006": {
       "status": "pass",
-      "testName": "ReminderWindow updateConfig updates config without repositioning when window does not exist or is destroyed @spec:AC-006 updates config without repositioning when window does not exist or is destroyed @spec:AC-006",
+      "testName": "AudioPlayer setFfplayPath updates ffplayPath for subsequent plays @spec:AC-006 updates ffplayPath for subsequent plays @spec:AC-006",
       "method": "jest-json"
     },
     "AC-007": {

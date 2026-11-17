@@ -57,7 +57,7 @@ describe('AppTray', () => {
       Menu.buildFromTemplate.mockClear();
     });
 
-    it('shows Add new reminder, Quick one-shot reminder, Manage reminders, Open sounds folder, Settings, Restart and Exit when no active reminders', () => {
+    it('shows Add new reminder, Add one-time reminder, Manage reminders, Open sounds folder, Settings, Restart and Exit when no active reminders', () => {
       tray.updateMenu(
         [{ id: 'water', title: 'Drink Water' }],
         []
@@ -66,7 +66,7 @@ describe('AppTray', () => {
       const call = Menu.buildFromTemplate.mock.calls[0][0];
       expect(call).toHaveLength(8);
       expect(call[0].label).toBe('Add new reminder');
-      expect(call[1].label).toBe('Quick one-shot reminder');
+      expect(call[1].label).toBe('Add one-time reminder');
       expect(call[2].label).toBe('Manage reminders');
       expect(call[3].label).toBe('Open sounds folder');
       expect(call[4].type).toBe('separator');
@@ -87,7 +87,7 @@ describe('AppTray', () => {
       expect(call[1].label).toBe('Snooze - "Drink Water"');
       expect(call[2].type).toBe('separator');
       expect(call[3].label).toBe('Add new reminder');
-      expect(call[4].label).toBe('Quick one-shot reminder');
+      expect(call[4].label).toBe('Add one-time reminder');
       expect(call[5].label).toBe('Manage reminders');
       expect(call[6].label).toBe('Open sounds folder');
       expect(call[7].type).toBe('separator');
@@ -110,7 +110,7 @@ describe('AppTray', () => {
       expect(call[1].label).toBe('Snooze - "Drink Water"');
       expect(call[2].type).toBe('separator');
       expect(call[3].label).toBe('Add new reminder');
-      expect(call[4].label).toBe('Quick one-shot reminder');
+      expect(call[4].label).toBe('Add one-time reminder');
       expect(call[5].label).toBe('Manage reminders');
       expect(call[6].label).toBe('Open sounds folder');
       expect(call[7].type).toBe('separator');
@@ -256,7 +256,7 @@ describe('AppTray', () => {
       const call = Menu.buildFromTemplate.mock.calls[0][0];
       expect(call).toHaveLength(8);
       expect(call[0].label).toBe('Add new reminder');
-      expect(call[1].label).toBe('Quick one-shot reminder');
+      expect(call[1].label).toBe('Add one-time reminder');
       expect(call[2].label).toBe('Manage reminders');
       expect(call[3].label).toBe('Open sounds folder');
       expect(call[4].type).toBe('separator');
@@ -303,7 +303,7 @@ describe('AppTray', () => {
       expect(() => call[5].click()).not.toThrow();
     });
 
-    it('calls onQuickReminder when Quick one-shot reminder is clicked @spec:AC-013', () => {
+    it('calls onQuickReminder when Add one-time reminder is clicked @spec:AC-013', () => {
       const onQuickReminder = jest.fn();
       tray.onQuickReminder = onQuickReminder;
 

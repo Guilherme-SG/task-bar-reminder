@@ -68,7 +68,7 @@ class AppTray {
     });
 
     items.push({
-      label: 'Quick one-shot reminder',
+      label: 'Add one-time reminder',
       click: () => {
         if (this.onQuickReminder) {
           this.onQuickReminder();
