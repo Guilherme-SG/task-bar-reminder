@@ -69,8 +69,8 @@ describe('AppTray', () => {
       expect(call[1].label).toBe('Quick one-shot reminder');
       expect(call[2].label).toBe('Manage reminders');
       expect(call[3].label).toBe('Open sounds folder');
-      expect(call[4].label).toBe('Settings');
-      expect(call[5].type).toBe('separator');
+      expect(call[4].type).toBe('separator');
+      expect(call[5].label).toBe('Settings');
       expect(call[6].label).toBe('Restart');
       expect(call[7].label).toBe('Exit');
     });
@@ -90,8 +90,8 @@ describe('AppTray', () => {
       expect(call[4].label).toBe('Quick one-shot reminder');
       expect(call[5].label).toBe('Manage reminders');
       expect(call[6].label).toBe('Open sounds folder');
-      expect(call[7].label).toBe('Settings');
-      expect(call[8].type).toBe('separator');
+      expect(call[7].type).toBe('separator');
+      expect(call[8].label).toBe('Settings');
       expect(call[9].label).toBe('Restart');
       expect(call[10].label).toBe('Exit');
     });
@@ -113,8 +113,8 @@ describe('AppTray', () => {
       expect(call[4].label).toBe('Quick one-shot reminder');
       expect(call[5].label).toBe('Manage reminders');
       expect(call[6].label).toBe('Open sounds folder');
-      expect(call[7].label).toBe('Settings');
-      expect(call[8].type).toBe('separator');
+      expect(call[7].type).toBe('separator');
+      expect(call[8].label).toBe('Settings');
       expect(call[9].label).toBe('Restart');
       expect(call[10].label).toBe('Exit');
     });
@@ -259,8 +259,8 @@ describe('AppTray', () => {
       expect(call[1].label).toBe('Quick one-shot reminder');
       expect(call[2].label).toBe('Manage reminders');
       expect(call[3].label).toBe('Open sounds folder');
-      expect(call[4].label).toBe('Settings');
-      expect(call[5].type).toBe('separator');
+      expect(call[4].type).toBe('separator');
+      expect(call[5].label).toBe('Settings');
       expect(call[6].label).toBe('Restart');
       expect(call[7].label).toBe('Exit');
     });
@@ -291,7 +291,7 @@ describe('AppTray', () => {
       tray.updateMenu([], []);
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      call[4].click();
+      call[5].click();
 
       expect(onOpenSettings).toHaveBeenCalled();
     });
@@ -300,7 +300,7 @@ describe('AppTray', () => {
       tray.updateMenu([], []);
 
       const call = Menu.buildFromTemplate.mock.calls[0][0];
-      expect(() => call[4].click()).not.toThrow();
+      expect(() => call[5].click()).not.toThrow();
     });
 
     it('calls onQuickReminder when Quick one-shot reminder is clicked @spec:AC-013', () => {

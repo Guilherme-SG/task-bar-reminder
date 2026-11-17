@@ -1,7 +1,7 @@
 {
   "feature": "quick-one-shot-reminder",
-  "timestamp": "2026-11-17T20:13:42.595Z",
-  "gitRev": "db2e80c",
+  "timestamp": "2026-11-17T20:58:35.336Z",
+  "gitRev": "6664b59",
   "command": "npx jest --json",
   "reporter": "jest-json",
   "exitCode": 0,
@@ -19,7 +19,7 @@
     },
     "AC-010": {
       "status": "pass",
-      "testName": "ConfigLoader one-shot reminders and useDefaultSound accepts useDefaultSound boolean on recurring and one-shot reminders @spec:AC-010 accepts useDefaultSound boolean on recurring and one-shot reminders @spec:AC-010",
+      "testName": "AudioPlayer default sound fallback falls back to default-{type}-{N}.mp3 when id has no sound files @spec:AC-010 falls back to default-{type}-{N}.mp3 when id has no sound files @spec:AC-010",
       "method": "jest-json"
     },
     "AC-011": {
@@ -34,7 +34,7 @@
     },
     "AC-013": {
       "status": "pass",
-      "testName": "ManageRemindersWindow show and window lifecycle sends init-view with quick mode when show(\"quick\") is called @spec:AC-013 sends init-view with quick mode when show(\"quick\") is called @spec:AC-013",
+      "testName": "AppTray updateMenu calls onQuickReminder when Quick one-shot reminder is clicked @spec:AC-013 calls onQuickReminder when Quick one-shot reminder is clicked @spec:AC-013",
       "method": "jest-json"
     },
     "AC-014": {

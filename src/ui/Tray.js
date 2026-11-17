@@ -94,6 +94,8 @@ class AppTray {
       },
     });
 
+    items.push({ type: 'separator' });
+
     items.push({
       label: 'Settings',
       click: () => {
@@ -102,8 +104,6 @@ class AppTray {
         }
       },
     });
-
-    items.push({ type: 'separator' });
 
     items.push({
       label: 'Restart',
