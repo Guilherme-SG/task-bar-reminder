@@ -1,0 +1,47 @@
+{
+  "feature": "configure-defaults-panel",
+  "timestamp": "2026-11-17T19:05:05.327Z",
+  "gitRev": "46d211b",
+  "command": "npx jest --json",
+  "reporter": "jest-json",
+  "exitCode": 0,
+  "testsParsed": 326,
+  "results": {
+    "AC-001": {
+      "status": "pass",
+      "testName": "ConfigLoader getDefaults and getSettings returns a fresh copy of factory defaults @spec:AC-001 returns a fresh copy of factory defaults @spec:AC-001",
+      "method": "jest-json"
+    },
+    "AC-002": {
+      "status": "pass",
+      "testName": "ConfigLoader saveSettings and validateSettings validates, writes settings preserving reminders, and returns runtime ms values @spec:AC-002 validates, writes settings preserving reminders, and returns runtime ms values @spec:AC-002",
+      "method": "jest-json"
+    },
+    "AC-003": {
+      "status": "pass",
+      "testName": "ConfigLoader resetSettings restores factory defaults in config.json while preserving reminders @spec:AC-003 restores factory defaults in config.json while preserving reminders @spec:AC-003",
+      "method": "jest-json"
+    },
+    "AC-004": {
+      "status": "pass",
+      "testName": "ManageRemindersWindow show and window lifecycle sends init-view with settings mode when show(\"settings\") is called @spec:AC-004 sends init-view with settings mode when show(\"settings\") is called @spec:AC-004",
+      "method": "jest-json"
+    },
+    "AC-005": {
+      "status": "pass",
+      "testName": "ManageRemindersWindow constructor and IPC handlers handles get-settings without and with onGetSettings @spec:AC-005 handles get-settings without and with onGetSettings @spec:AC-005",
+      "method": "jest-json"
+    },
+    "AC-006": {
+      "status": "pass",
+      "testName": "ReminderWindow updateConfig updates config without repositioning when window does not exist or is destroyed @spec:AC-006 updates config without repositioning when window does not exist or is destroyed @spec:AC-006",
+      "method": "jest-json"
+    },
+    "AC-007": {
+      "status": "pass",
+      "testName": "ConfigLoader reminder inheritance normalization removes null color and null blockWhenFocused so reminders inherit global defaults @spec:AC-007 removes null color and null blockWhenFocused so reminders inherit global defaults @spec:AC-007",
+      "method": "jest-json"
+    }
+  },
+  "principles": {}
+}

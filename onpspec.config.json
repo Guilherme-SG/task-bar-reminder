@@ -9,6 +9,13 @@
     "__tests__/**"
   ],
   "srcGlobs": [
-    "src/**"
+    "src/main.js",
+    "src/core/ConfigLoader.js",
+    "src/core/AudioPlayer.js",
+    "src/core/ReminderService.js",
+    "src/ui/ManageRemindersWindow.js",
+    "src/ui/manage-reminders.html",
+    "src/ui/ReminderWindow.js",
+    "src/ui/Tray.js"
   ]
 }

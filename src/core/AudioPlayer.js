@@ -10,6 +10,10 @@ class AudioPlayer {
     this.currentProcess = null;
   }
 
+  setFfplayPath(ffplayPath) {
+    this.ffplayPath = ffplayPath;
+  }
+
   play(audioPath) {
     return new Promise((resolve) => {
       this.stop();

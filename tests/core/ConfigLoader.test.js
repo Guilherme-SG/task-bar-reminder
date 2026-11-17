@@ -745,4 +745,234 @@ describe('ConfigLoader', () => {
       expect(written.reminders[0].id).toBe('stretch');
     });
   });
+
+  describe('getDefaults and getSettings', () => {
+    it('returns a fresh copy of factory defaults @spec:AC-001', () => {
+      const defaults1 = ConfigLoader.getDefaults();
+      expect(defaults1).toEqual({
+        ffplayPath: '',
+        autoSnoozeTimeout: 60,
+        snoozeInterval: 300,
+        blockWhenFocused: [],
+        window: { width: 320, height: 220, defaultColor: '#1a1a2e' },
+      });
+
+      defaults1.blockWhenFocused.push('mutated');
+      defaults1.window.width = 999;
+
+      const defaults2 = ConfigLoader.getDefaults();
+      expect(defaults2.blockWhenFocused).toEqual([]);
+      expect(defaults2.window.width).toBe(320);
+    });
+
+    it('returns merged settings in seconds alongside factory defaults @spec:AC-001', () => {
+      writeConfig({
+        ffplayPath: 'C:\\tools\\ffplay.exe',
+        snoozeInterval: 120,
+        window: { width: 420 },
+        blockWhenFocused: ['dota2'],
+        reminders: [{ id: 'water', title: 'Water', cron: '0 * * * *' }],
+      });
+
+      const settings = ConfigLoader.getSettings();
+
+      expect(settings).toEqual({
+        ffplayPath: 'C:\\tools\\ffplay.exe',
+        autoSnoozeTimeout: 60,
+        snoozeInterval: 120,
+        blockWhenFocused: ['dota2'],
+        window: { width: 420, height: 220, defaultColor: '#1a1a2e' },
+        defaults: {
+          ffplayPath: '',
+          autoSnoozeTimeout: 60,
+          snoozeInterval: 300,
+          blockWhenFocused: [],
+          window: { width: 320, height: 220, defaultColor: '#1a1a2e' },
+        },
+      });
+    });
+  });
+
+  describe('saveSettings and validateSettings', () => {
+    it('validates, writes settings preserving reminders, and returns runtime ms values @spec:AC-002', () => {
+      writeConfig({
+        reminders: [{ id: 'water', title: 'Water', cron: '0 * * * *' }],
+      });
+
+      const runtime = ConfigLoader.saveSettings({
+        ffplayPath: 'C:\\ffmpeg\\ffplay.exe',
+        autoSnoozeTimeout: 45,
+        snoozeInterval: 180,
+        blockWhenFocused: 'dota2, eldenring',
+        window: { width: 360, height: 260, defaultColor: '#112233' },
+      });
+
+      const written = JSON.parse(fs.writeFileSync.mock.calls[0][1]);
+      expect(written).toEqual({
+        ffplayPath: 'C:\\ffmpeg\\ffplay.exe',
+        autoSnoozeTimeout: 45,
+        snoozeInterval: 180,
+        blockWhenFocused: ['dota2', 'eldenring'],
+        window: { width: 360, height: 260, defaultColor: '#112233' },
+        reminders: [{ id: 'water', title: 'Water', cron: '0 * * * *' }],
+      });
+
+      expect(runtime).toEqual({
+        ffplayPath: 'C:\\ffmpeg\\ffplay.exe',
+        autoSnoozeTimeout: 45000,
+        snoozeInterval: 180000,
+        blockWhenFocused: ['dota2', 'eldenring'],
+        window: { width: 360, height: 260, defaultColor: '#112233' },
+      });
+    });
+
+    it('initializes reminders to [] when saving settings if missing in config.json @spec:AC-002', () => {
+      writeConfig({});
+
+      ConfigLoader.saveSettings({ snoozeInterval: 200 });
+
+      const written = JSON.parse(fs.writeFileSync.mock.calls[0][1]);
+      expect(written.reminders).toEqual([]);
+      expect(written.snoozeInterval).toBe(200);
+      expect(written.window).toEqual({ width: 320, height: 220, defaultColor: '#1a1a2e' });
+    });
+
+    it('rejects non-string ffplayPath @spec:AC-002', () => {
+      writeConfig(validConfig);
+
+      expect(() => ConfigLoader.saveSettings({ ffplayPath: 123 })).toThrow('"ffplayPath" must be a string');
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('rejects NaN for autoSnoozeTimeout and snoozeInterval @spec:AC-002', () => {
+      writeConfig(validConfig);
+
+      expect(() => ConfigLoader.saveSettings({ autoSnoozeTimeout: Number.NaN })).toThrow(
+        '"autoSnoozeTimeout" must be a non-negative number'
+      );
+      expect(() => ConfigLoader.saveSettings({ snoozeInterval: Number.NaN })).toThrow(
+        '"snoozeInterval" must be a non-negative number'
+      );
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('rejects invalid window object types in saveSettings and load @spec:AC-002', () => {
+      writeConfig(validConfig);
+      expect(() => ConfigLoader.saveSettings({ window: null })).toThrow('"window" must be an object');
+      expect(() => ConfigLoader.saveSettings({ window: 'bad' })).toThrow('"window" must be an object');
+      expect(() => ConfigLoader.saveSettings({ window: [] })).toThrow('"window" must be an object');
+
+      writeConfig({ window: null, reminders: [{ id: 'a', title: 'A', cron: '0 * * * *' }] });
+      expect(() => ConfigLoader.load()).toThrow('"window" must be an object');
+
+      writeConfig({ window: 'bad', reminders: [{ id: 'a', title: 'A', cron: '0 * * * *' }] });
+      expect(() => ConfigLoader.load()).toThrow('"window" must be an object');
+
+      writeConfig({ window: [], reminders: [{ id: 'a', title: 'A', cron: '0 * * * *' }] });
+      expect(() => ConfigLoader.load()).toThrow('"window" must be an object');
+    });
+
+    it('rejects window.width < 200, non-number, or NaN @spec:AC-002', () => {
+      writeConfig(validConfig);
+
+      expect(() => ConfigLoader.saveSettings({ window: { width: 199, height: 220 } })).toThrow(
+        '"window.width" must be a number >= 200'
+      );
+      expect(() => ConfigLoader.saveSettings({ window: { width: '320', height: 220 } })).toThrow(
+        '"window.width" must be a number >= 200'
+      );
+      expect(() => ConfigLoader.saveSettings({ window: { width: Number.NaN, height: 220 } })).toThrow(
+        '"window.width" must be a number >= 200'
+      );
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('rejects window.height < 120, non-number, or NaN @spec:AC-002', () => {
+      writeConfig(validConfig);
+
+      expect(() => ConfigLoader.saveSettings({ window: { width: 320, height: 119 } })).toThrow(
+        '"window.height" must be a number >= 120'
+      );
+      expect(() => ConfigLoader.saveSettings({ window: { width: 320, height: '220' } })).toThrow(
+        '"window.height" must be a number >= 120'
+      );
+      expect(() => ConfigLoader.saveSettings({ window: { width: 320, height: Number.NaN } })).toThrow(
+        '"window.height" must be a number >= 120'
+      );
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('allows undefined window.defaultColor when validateSettings is called directly @spec:AC-002', () => {
+      expect(() =>
+        ConfigLoader.validateSettings({
+          ffplayPath: '',
+          autoSnoozeTimeout: 60,
+          snoozeInterval: 300,
+          blockWhenFocused: [],
+          window: { width: 200, height: 120 },
+        })
+      ).not.toThrow();
+    });
+  });
+
+  describe('resetSettings', () => {
+    it('restores factory defaults in config.json while preserving reminders @spec:AC-003', () => {
+      writeConfig({
+        ffplayPath: 'C:\\custom\\ffplay.exe',
+        autoSnoozeTimeout: 10,
+        snoozeInterval: 99,
+        blockWhenFocused: ['dota2'],
+        window: { width: 500, height: 400, defaultColor: '#abcdef' },
+        reminders: [{ id: 'water', title: 'Drink Water', cron: '*/30 * * * *' }],
+      });
+
+      const runtime = ConfigLoader.resetSettings();
+
+      const written = JSON.parse(fs.writeFileSync.mock.calls[0][1]);
+      expect(written).toEqual({
+        ffplayPath: '',
+        autoSnoozeTimeout: 60,
+        snoozeInterval: 300,
+        blockWhenFocused: [],
+        window: { width: 320, height: 220, defaultColor: '#1a1a2e' },
+        reminders: [{ id: 'water', title: 'Drink Water', cron: '*/30 * * * *' }],
+      });
+      expect(runtime).toEqual({
+        ffplayPath: '',
+        autoSnoozeTimeout: 60000,
+        snoozeInterval: 300000,
+        blockWhenFocused: [],
+        window: { width: 320, height: 220, defaultColor: '#1a1a2e' },
+      });
+    });
+  });
+
+  describe('reminder inheritance normalization', () => {
+    it('removes null color and null blockWhenFocused so reminders inherit global defaults @spec:AC-007', () => {
+      writeConfig({
+        reminders: [
+          {
+            id: 'water',
+            title: 'Drink Water',
+            cron: '*/30 * * * *',
+            color: '#112233',
+            blockWhenFocused: ['dota2'],
+          },
+        ],
+      });
+
+      const updated = ConfigLoader.updateReminder('water', {
+        color: null,
+        blockWhenFocused: null,
+      });
+
+      const written = JSON.parse(fs.writeFileSync.mock.calls[0][1]);
+      expect(written.reminders[0].color).toBeUndefined();
+      expect(written.reminders[0].blockWhenFocused).toBeUndefined();
+      expect('color' in written.reminders[0]).toBe(false);
+      expect('blockWhenFocused' in written.reminders[0]).toBe(false);
+      expect(updated.color).toBeUndefined();
+      expect(updated.blockWhenFocused).toBeUndefined();
+    });
+  });
 });

@@ -188,4 +188,25 @@ describe('AudioPlayer', () => {
       expect(result).toMatch(/\.mp3$/);
     });
   });
+
+  describe('setFfplayPath', () => {
+    it('updates ffplayPath for subsequent plays @spec:AC-006', async () => {
+      fs.existsSync.mockReturnValue(true);
+      const mockProcess = new EventEmitter();
+      mockProcess.kill = jest.fn();
+      spawn.mockReturnValue(mockProcess);
+
+      player.setFfplayPath('C:\\new\\ffplay.exe');
+      expect(player.ffplayPath).toBe('C:\\new\\ffplay.exe');
+
+      const promise = player.play('/fake/audio.mp3');
+      expect(spawn).toHaveBeenCalledWith(
+        'C:\\new\\ffplay.exe',
+        ['-nodisp', '-autoexit', '-loglevel', 'quiet', '/fake/audio.mp3'],
+        { detached: false, stdio: 'ignore' }
+      );
+      mockProcess.emit('exit');
+      await promise;
+    });
+  });
 });

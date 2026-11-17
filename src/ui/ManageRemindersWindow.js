@@ -11,6 +11,9 @@ class ManageRemindersWindow {
     this.onDelete = null;
     this.onGetReminders = null;
     this.onOpenSounds = null;
+    this.onGetSettings = null;
+    this.onSaveSettings = null;
+    this.onResetSettings = null;
 
     ipcMain.removeHandler('save-reminder');
     ipcMain.handle('save-reminder', async (_, reminderData) => {
@@ -94,6 +97,56 @@ class ManageRemindersWindow {
     ipcMain.on('close-manage-reminders', () => {
       this.hide();
     });
+
+    ipcMain.removeHandler('get-settings');
+    ipcMain.handle('get-settings', async () => {
+      if (this.onGetSettings) {
+        return this.onGetSettings();
+      }
+      return null;
+    });
+
+    this.#handleSettingsMutation(
+      'save-settings',
+      () => this.onSaveSettings,
+      'No save settings handler configured'
+    );
+
+    this.#handleSettingsMutation(
+      'reset-settings',
+      () => this.onResetSettings,
+      'No reset settings handler configured'
+    );
+
+    ipcMain.removeHandler('browse-ffplay-file');
+    ipcMain.handle('browse-ffplay-file', async () => {
+      const result = await dialog.showOpenDialog({
+        title: 'Select ffplay Executable',
+        properties: ['openFile'],
+        filters: [{ name: 'Executable files', extensions: ['exe'] }],
+      });
+
+      if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+        return result.filePaths[0];
+      }
+      return null;
+    });
+  }
+
+  #handleSettingsMutation(channel, getCallback, missingMessage) {
+    ipcMain.removeHandler(channel);
+    ipcMain.handle(channel, async (_, ...args) => {
+      const callback = getCallback();
+      if (!callback) {
+        return { success: false, error: missingMessage };
+      }
+      try {
+        const settings = await callback(...args);
+        return { success: true, settings };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    });
   }
 
   setOnSave(callback) {
@@ -114,6 +167,18 @@ class ManageRemindersWindow {
 
   setOnOpenSounds(callback) {
     this.onOpenSounds = callback;
+  }
+
+  setOnGetSettings(callback) {
+    this.onGetSettings = callback;
+  }
+
+  setOnSaveSettings(callback) {
+    this.onSaveSettings = callback;
+  }
+
+  setOnResetSettings(callback) {
+    this.onResetSettings = callback;
   }
 
   createWindow() {

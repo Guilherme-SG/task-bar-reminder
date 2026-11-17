@@ -362,4 +362,36 @@ describe('ReminderWindow', () => {
       expect(() => {}).not.toThrow();
     });
   });
+
+  describe('updateConfig', () => {
+    it('updates config without repositioning when window does not exist or is destroyed @spec:AC-006', () => {
+      const nextConfig = { window: { width: 400, height: 300, defaultColor: '#223344' } };
+      window.updateConfig(nextConfig);
+      expect(window.config).toBe(nextConfig);
+
+      window.createWindow();
+      window.window.isDestroyed.mockReturnValue(true);
+      window.window.setBounds.mockClear();
+
+      window.updateConfig({ window: { width: 450, height: 280, defaultColor: '#112233' } });
+      expect(window.window.setBounds).not.toHaveBeenCalled();
+    });
+
+    it('updates config and repositions existing active window @spec:AC-006', () => {
+      window.createWindow();
+      window.window.isDestroyed.mockReturnValue(false);
+      window.window.setBounds.mockClear();
+
+      const nextConfig = { window: { width: 420, height: 260, defaultColor: '#334455' } };
+      window.updateConfig(nextConfig);
+
+      expect(window.config).toBe(nextConfig);
+      expect(window.window.setBounds).toHaveBeenCalledWith({
+        x: 1920 - 420 - 20,
+        y: 1080 - 260 - 20,
+        width: 420,
+        height: 260,
+      });
+    });
+  });
 });

@@ -831,4 +831,89 @@ describe('ReminderService', () => {
       expect(mockReminderWindow.hide).not.toHaveBeenCalled();
     });
   });
+
+  describe('updateSettings', () => {
+    it('updates config, audioPlayer, reminderWindow, starts focusGuard and releases deferred reminders @spec:AC-006', async () => {
+      mockAudioPlayer.setFfplayPath = jest.fn();
+      mockReminderWindow.updateConfig = jest.fn();
+      mockFocusGuard.stop = jest.fn();
+
+      // Make 'water' defer while blocked
+      service.config.blockWhenFocused = ['dota2'];
+      service.config.reminders = [{ id: 'water', title: 'Drink Water', cron: '*/40 * * * *' }];
+      mockFocusGuard.isBlocked.mockReturnValueOnce(true).mockReturnValue(false);
+      mockStateStore.getNextFireTime.mockResolvedValue(null);
+      mockScheduler.getNextFireTime.mockReturnValue(new Date(Date.now() + 60000));
+      mockAudioPlayer.pickRandom.mockReturnValue(null);
+
+      await service.start();
+      await jest.advanceTimersByTimeAsync(60000);
+      expect(service.deferredReminders.has('water')).toBe(true);
+
+      const newSettings = {
+        ffplayPath: 'C:\\ffmpeg\\ffplay.exe',
+        autoSnoozeTimeout: 30000,
+        snoozeInterval: 120000,
+        blockWhenFocused: ['eldenring'],
+        window: { width: 400, height: 260, defaultColor: '#223344' },
+      };
+
+      service.updateSettings(newSettings);
+
+      expect(service.config.ffplayPath).toBe('C:\\ffmpeg\\ffplay.exe');
+      expect(service.config.autoSnoozeTimeout).toBe(30000);
+      expect(service.config.snoozeInterval).toBe(120000);
+      expect(service.config.blockWhenFocused).toEqual(['eldenring']);
+      expect(service.config.window).toEqual({ width: 400, height: 260, defaultColor: '#223344' });
+      expect(mockAudioPlayer.setFfplayPath).toHaveBeenCalledWith('C:\\ffmpeg\\ffplay.exe');
+      expect(mockReminderWindow.updateConfig).toHaveBeenCalledWith(service.config);
+      expect(mockFocusGuard.start).toHaveBeenCalled();
+      expect(mockFocusGuard.stop).not.toHaveBeenCalled();
+      expect(service.deferredReminders.has('water')).toBe(false);
+      expect(service.shownReminders.has('water')).toBe(true);
+    });
+
+    it('stops focusGuard when no reminder has blockWhenFocused and releases deferred reminders @spec:AC-006', async () => {
+      mockFocusGuard.stop = jest.fn();
+      service.deferredReminders.set('water', service.config.reminders[0]);
+      mockFocusGuard.isBlocked.mockReturnValue(false);
+
+      service.updateSettings({
+        ffplayPath: '',
+        autoSnoozeTimeout: 60000,
+        snoozeInterval: 300000,
+        blockWhenFocused: [],
+        window: { width: 320, height: 220, defaultColor: '#1a1a2e' },
+      });
+
+      expect(mockFocusGuard.stop).toHaveBeenCalled();
+      expect(service.deferredReminders.has('water')).toBe(false);
+    });
+
+    it('handles missing optional hooks and null dependencies gracefully @spec:AC-006', () => {
+      // Case 1: focusGuard without stop() and default mocks without setFfplayPath/updateConfig
+      service.updateSettings({
+        ffplayPath: '',
+        autoSnoozeTimeout: 60000,
+        snoozeInterval: 300000,
+        blockWhenFocused: [],
+        window: { width: 320, height: 220, defaultColor: '#1a1a2e' },
+      });
+
+      // Case 2: audioPlayer, reminderWindow, and focusGuard all null
+      service.audioPlayer = null;
+      service.reminderWindow = null;
+      service.focusGuard = null;
+
+      expect(() =>
+        service.updateSettings({
+          ffplayPath: 'C:\\ffplay.exe',
+          autoSnoozeTimeout: 10000,
+          snoozeInterval: 20000,
+          blockWhenFocused: ['game'],
+          window: { width: 320, height: 220, defaultColor: '#1a1a2e' },
+        })
+      ).not.toThrow();
+    });
+  });
 });

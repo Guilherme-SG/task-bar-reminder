@@ -1,0 +1,136 @@
+{
+  "version": 2,
+  "engine": ".agents/skills/onp-spec-driven/scripts/onp-spec.mjs",
+  "config": {
+    "maxParalelas": 3,
+    "model": null,
+    "esforco": "medium",
+    "permissionMode": "acceptEdits",
+    "allowedTools": null,
+    "sandbox": "workspace-write",
+    "quotaCommand": null,
+    "modelsCommand": null,
+    "notifications": {
+      "enabled": false,
+      "command": null
+    },
+    "quota": {
+      "thresholdPercent": 5,
+      "pollIntervalMs": 60000
+    }
+  },
+  "testCommand": "npx jest --json",
+  "runId": "task-bar-reminder-configure-defaults-panel-mwl21z03-e8b63162",
+  "feature": "configure-defaults-panel",
+  "agent": "antigravity",
+  "modo": "sequencial",
+  "paralelizar": null,
+  "modeloForcado": null,
+  "esforcoForcado": null,
+  "geradoEm": "2026-11-17 18:58",
+  "createdAt": "2026-11-17T18:58:05.826Z",
+  "branchTrabalho": "spec/configure-defaults-panel",
+  "baseDir": ".spec/features/configure-defaults-panel",
+  "artifactDir": ".spec/features/configure-defaults-panel",
+  "specDir": ".spec",
+  "repoName": "task-bar-reminder",
+  "logsDir": "../onp-worktrees/task-bar-reminder-configure-defaults-panel-logs",
+  "ondas": [],
+  "faixas": [],
+  "sequenciais": [
+    {
+      "id": "T-001",
+      "titulo": "Implementar leitura, validação, salvamento, reset e normalização de herança no ConfigLoader",
+      "modelo": null,
+      "esforco": "medium",
+      "arquivos": [
+        "src/core/ConfigLoader.js",
+        "tests/core/ConfigLoader.test.js"
+      ],
+      "refs": [
+        "US-001",
+        "AC-001",
+        "AC-002",
+        "AC-003",
+        "US-005",
+        "AC-007"
+      ],
+      "prompt": "Você executa UMA tarefa da feature \"configure-defaults-panel\" (fluxo onp-spec, spec-anchored).\nLeia primeiro: .spec/features/configure-defaults-panel/spec.md, .spec/features/configure-defaults-panel/tasks.md e .spec/constituicao.md.\n\nSua tarefa (somente ela):\nT-001 — \"Implementar leitura, validação, salvamento, reset e normalização de herança no ConfigLoader\"\n  critérios/refs: AC-001 (Carregar configurações globais e valores padrão de fábrica), AC-002 (Validar e salvar configurações globais preservando os lembretes existentes), AC-003 (Restaurar configurações globais para o padrão de fábrica), AC-007 (Permitir que lembretes herdem ou limpem cor e lista de bloqueio global)\n  arquivos permitidos (e seus testes): src/core/ConfigLoader.js, tests/core/ConfigLoader.test.js\n  mensagem de commit: \"T-001 configure-defaults-panel: Implementar leitura, validação, salvamento, reset e normalização de herança no ConfigLoader\"\n\nRegras inegociáveis:\n- Todo critério de aceite referenciado vira teste com @spec:AC-xxx no título.\n- NUNCA enfraqueça, pule (skip/todo) ou apague um teste para passar — teste pulado não é prova e o audit acusa.\n- Rode os testes localmente com `npx jest --json` até passarem.\n- NÃO edite tasks.md, NÃO rode onp-spec verify/audit e NÃO toque em outras tarefas — o orquestrador cuida disso.\n- Specs, PRDs, ADRs, TDDs e documentos existentes são somente leitura. Nunca reformate, migre ou sobrescreva esses arquivos; mudanças de requisito exigem uma proposta separada e resposta do cliente.\n- Leia PRD, ADR, design.md e research.md quando existirem; pare e solicite decisão nativa se houver conflito de domínio/requisito/decisão. Nunca decida conflitos em headless.\n- Ao retomar após limite, inspecione git diff/log e continue o trabalho parcial sem repetir operações já concluídas.\n- Ao final de CADA tarefa: `git add` só no que você tocou e um commit próprio."
+    },
+    {
+      "id": "T-002",
+      "titulo": "Implementar atualização ao vivo de configurações nos serviços principais e janela de popup",
+      "modelo": null,
+      "esforco": "medium",
+      "arquivos": [
+        "src/core/AudioPlayer.js",
+        "src/ui/ReminderWindow.js",
+        "src/core/ReminderService.js",
+        "tests/core/AudioPlayer.test.js",
+        "tests/ui/ReminderWindow.test.js",
+        "tests/core/ReminderService.test.js"
+      ],
+      "refs": [
+        "US-004",
+        "AC-006"
+      ],
+      "prompt": "Você executa UMA tarefa da feature \"configure-defaults-panel\" (fluxo onp-spec, spec-anchored).\nLeia primeiro: .spec/features/configure-defaults-panel/spec.md, .spec/features/configure-defaults-panel/tasks.md e .spec/constituicao.md.\n\nSua tarefa (somente ela):\nT-002 — \"Implementar atualização ao vivo de configurações nos serviços principais e janela de popup\"\n  critérios/refs: AC-006 (Aplicar alterações de configurações imediatamente nos serviços ativos sem reiniciar)\n  arquivos permitidos (e seus testes): src/core/AudioPlayer.js, src/ui/ReminderWindow.js, src/core/ReminderService.js, tests/core/AudioPlayer.test.js, tests/ui/ReminderWindow.test.js, tests/core/ReminderService.test.js\n  mensagem de commit: \"T-002 configure-defaults-panel: Implementar atualização ao vivo de configurações nos serviços principais e janela de popup\"\n\nRegras inegociáveis:\n- Todo critério de aceite referenciado vira teste com @spec:AC-xxx no título.\n- NUNCA enfraqueça, pule (skip/todo) ou apague um teste para passar — teste pulado não é prova e o audit acusa.\n- Rode os testes localmente com `npx jest --json` até passarem.\n- NÃO edite tasks.md, NÃO rode onp-spec verify/audit e NÃO toque em outras tarefas — o orquestrador cuida disso.\n- Specs, PRDs, ADRs, TDDs e documentos existentes são somente leitura. Nunca reformate, migre ou sobrescreva esses arquivos; mudanças de requisito exigem uma proposta separada e resposta do cliente.\n- Leia PRD, ADR, design.md e research.md quando existirem; pare e solicite decisão nativa se houver conflito de domínio/requisito/decisão. Nunca decida conflitos em headless.\n- Ao retomar após limite, inspecione git diff/log e continue o trabalho parcial sem repetir operações já concluídas.\n- Ao final de CADA tarefa: `git add` só no que você tocou e um commit próprio."
+    },
+    {
+      "id": "T-003",
+      "titulo": "Adicionar entrada Settings no menu da bandeja (AppTray)",
+      "modelo": null,
+      "esforco": "medium",
+      "arquivos": [
+        "src/ui/Tray.js",
+        "tests/ui/Tray.test.js"
+      ],
+      "refs": [
+        "US-002",
+        "AC-004"
+      ],
+      "prompt": "Você executa UMA tarefa da feature \"configure-defaults-panel\" (fluxo onp-spec, spec-anchored).\nLeia primeiro: .spec/features/configure-defaults-panel/spec.md, .spec/features/configure-defaults-panel/tasks.md e .spec/constituicao.md.\n\nSua tarefa (somente ela):\nT-003 — \"Adicionar entrada Settings no menu da bandeja (AppTray)\"\n  critérios/refs: AC-004 (Abrir a visualização de configurações pelo menu da bandeja (Tray) e cabeçalho)\n  arquivos permitidos (e seus testes): src/ui/Tray.js, tests/ui/Tray.test.js\n  mensagem de commit: \"T-003 configure-defaults-panel: Adicionar entrada Settings no menu da bandeja (AppTray)\"\n\nRegras inegociáveis:\n- Todo critério de aceite referenciado vira teste com @spec:AC-xxx no título.\n- NUNCA enfraqueça, pule (skip/todo) ou apague um teste para passar — teste pulado não é prova e o audit acusa.\n- Rode os testes localmente com `npx jest --json` até passarem.\n- NÃO edite tasks.md, NÃO rode onp-spec verify/audit e NÃO toque em outras tarefas — o orquestrador cuida disso.\n- Specs, PRDs, ADRs, TDDs e documentos existentes são somente leitura. Nunca reformate, migre ou sobrescreva esses arquivos; mudanças de requisito exigem uma proposta separada e resposta do cliente.\n- Leia PRD, ADR, design.md e research.md quando existirem; pare e solicite decisão nativa se houver conflito de domínio/requisito/decisão. Nunca decida conflitos em headless.\n- Ao retomar após limite, inspecione git diff/log e continue o trabalho parcial sem repetir operações já concluídas.\n- Ao final de CADA tarefa: `git add` só no que você tocou e um commit próprio."
+    },
+    {
+      "id": "T-004",
+      "titulo": "Expor canais IPC de configurações e seleção de ffplay em ManageRemindersWindow",
+      "modelo": null,
+      "esforco": "medium",
+      "arquivos": [
+        "src/ui/ManageRemindersWindow.js",
+        "tests/ui/ManageRemindersWindow.test.js"
+      ],
+      "refs": [
+        "US-002",
+        "AC-004",
+        "US-003",
+        "AC-005"
+      ],
+      "prompt": "Você executa UMA tarefa da feature \"configure-defaults-panel\" (fluxo onp-spec, spec-anchored).\nLeia primeiro: .spec/features/configure-defaults-panel/spec.md, .spec/features/configure-defaults-panel/tasks.md e .spec/constituicao.md.\n\nSua tarefa (somente ela):\nT-004 — \"Expor canais IPC de configurações e seleção de ffplay em ManageRemindersWindow\"\n  critérios/refs: AC-004 (Abrir a visualização de configurações pelo menu da bandeja (Tray) e cabeçalho), AC-005 (Gerenciar leitura, salvamento, restauração e seleção de executável ffplay via IPC)\n  arquivos permitidos (e seus testes): src/ui/ManageRemindersWindow.js, tests/ui/ManageRemindersWindow.test.js\n  mensagem de commit: \"T-004 configure-defaults-panel: Expor canais IPC de configurações e seleção de ffplay em ManageRemindersWindow\"\n\nRegras inegociáveis:\n- Todo critério de aceite referenciado vira teste com @spec:AC-xxx no título.\n- NUNCA enfraqueça, pule (skip/todo) ou apague um teste para passar — teste pulado não é prova e o audit acusa.\n- Rode os testes localmente com `npx jest --json` até passarem.\n- NÃO edite tasks.md, NÃO rode onp-spec verify/audit e NÃO toque em outras tarefas — o orquestrador cuida disso.\n- Specs, PRDs, ADRs, TDDs e documentos existentes são somente leitura. Nunca reformate, migre ou sobrescreva esses arquivos; mudanças de requisito exigem uma proposta separada e resposta do cliente.\n- Leia PRD, ADR, design.md e research.md quando existirem; pare e solicite decisão nativa se houver conflito de domínio/requisito/decisão. Nunca decida conflitos em headless.\n- Ao retomar após limite, inspecione git diff/log e continue o trabalho parcial sem repetir operações já concluídas.\n- Ao final de CADA tarefa: `git add` só no que você tocou e um commit próprio."
+    },
+    {
+      "id": "T-005",
+      "titulo": "Implementar visualização Settings e herança de defaults na UI e integrar wiring no main.js",
+      "modelo": null,
+      "esforco": "medium",
+      "arquivos": [
+        "src/ui/manage-reminders.html",
+        "src/main.js"
+      ],
+      "refs": [
+        "US-002",
+        "AC-004",
+        "US-003",
+        "AC-005",
+        "US-004",
+        "AC-006",
+        "US-005",
+        "AC-007"
+      ],
+      "prompt": "Você executa UMA tarefa da feature \"configure-defaults-panel\" (fluxo onp-spec, spec-anchored).\nLeia primeiro: .spec/features/configure-defaults-panel/spec.md, .spec/features/configure-defaults-panel/tasks.md e .spec/constituicao.md.\n\nSua tarefa (somente ela):\nT-005 — \"Implementar visualização Settings e herança de defaults na UI e integrar wiring no main.js\"\n  critérios/refs: AC-004 (Abrir a visualização de configurações pelo menu da bandeja (Tray) e cabeçalho), AC-005 (Gerenciar leitura, salvamento, restauração e seleção de executável ffplay via IPC), AC-006 (Aplicar alterações de configurações imediatamente nos serviços ativos sem reiniciar), AC-007 (Permitir que lembretes herdem ou limpem cor e lista de bloqueio global)\n  arquivos permitidos (e seus testes): src/ui/manage-reminders.html, src/main.js\n  mensagem de commit: \"T-005 configure-defaults-panel: Implementar visualização Settings e herança de defaults na UI e integrar wiring no main.js\"\n\nRegras inegociáveis:\n- Todo critério de aceite referenciado vira teste com @spec:AC-xxx no título.\n- NUNCA enfraqueça, pule (skip/todo) ou apague um teste para passar — teste pulado não é prova e o audit acusa.\n- Rode os testes localmente com `npx jest --json` até passarem.\n- NÃO edite tasks.md, NÃO rode onp-spec verify/audit e NÃO toque em outras tarefas — o orquestrador cuida disso.\n- Specs, PRDs, ADRs, TDDs e documentos existentes são somente leitura. Nunca reformate, migre ou sobrescreva esses arquivos; mudanças de requisito exigem uma proposta separada e resposta do cliente.\n- Leia PRD, ADR, design.md e research.md quando existirem; pare e solicite decisão nativa se houver conflito de domínio/requisito/decisão. Nunca decida conflitos em headless.\n- Ao retomar após limite, inspecione git diff/log e continue o trabalho parcial sem repetir operações já concluídas.\n- Ao final de CADA tarefa: `git add` só no que você tocou e um commit próprio."
+    }
+  ],
+  "concluidas": [],
+  "avisos": [],
+  "sourceFingerprint": "183890135af190c6d7df76328cc323164331f6b245bd5686de18022fb7e4a873"
+}

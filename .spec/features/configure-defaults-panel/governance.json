@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "large": true,
+  "documentationContract": "onp-docs-v1",
+  "domains": [
+    "config",
+    "core",
+    "tray",
+    "ui"
+  ],
+  "clientRequest": "/grill-me Now, lets add a new feature, a configure painel that let the user configure the default settings and return then to default. Everything in config.json that comes as default, now will be configurable.",
+  "review": {
+    "summary": "Revisão semântica concluída: primeira feature especificada do projeto, sem conflitos com a constituição P-001/P-002 nem contratos anteriores.",
+    "reviewer": "antigravity-session",
+    "conflicts": [],
+    "fingerprint": "3730a63549aa4006cbb510e75dc11b3bbc6d8f1354652a1c0458334183de745a",
+    "ownFingerprint": "3730a63549aa4006cbb510e75dc11b3bbc6d8f1354652a1c0458334183de745a",
+    "reviewedAt": "2026-11-17T19:04:56.119Z",
+    "documents": [
+      ".spec/features/configure-defaults-panel/prd.md",
+      ".spec/features/configure-defaults-panel/adr.md",
+      ".spec/features/configure-defaults-panel/design.md",
+      ".spec/features/configure-defaults-panel/spec.md",
+      ".spec/features/configure-defaults-panel/tasks.md",
+      ".spec/features/configure-defaults-panel/research.md",
+      ".spec/constituicao.md",
+      "onpspec.config.json"
+    ]
+  },
+  "decisions": []
+}

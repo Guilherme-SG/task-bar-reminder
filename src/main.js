@@ -85,6 +85,20 @@ app.whenReady().then(async () => {
   manageRemindersWindow.setOnOpenSounds(openSoundsFolder);
   manageRemindersWindow.setOnGetReminders(() => config.reminders);
 
+  manageRemindersWindow.setOnGetSettings(() => ConfigLoader.getSettings());
+
+  manageRemindersWindow.setOnSaveSettings(async (settingsData) => {
+    const runtimeSettings = ConfigLoader.saveSettings(settingsData);
+    reminderService.updateSettings(runtimeSettings);
+    return ConfigLoader.getSettings();
+  });
+
+  manageRemindersWindow.setOnResetSettings(async () => {
+    const runtimeSettings = ConfigLoader.resetSettings();
+    reminderService.updateSettings(runtimeSettings);
+    return ConfigLoader.getSettings();
+  });
+
   manageRemindersWindow.setOnSave(async (reminderData) => {
     const savedReminder = ConfigLoader.saveReminder(reminderData);
     await reminderService.addReminder(savedReminder);
@@ -109,6 +123,10 @@ app.whenReady().then(async () => {
 
   tray.onManageReminders = () => {
     manageRemindersWindow.show('list');
+  };
+
+  tray.onOpenSettings = () => {
+    manageRemindersWindow.show('settings');
   };
 
   tray.onRestart = () => {

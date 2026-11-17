@@ -22,6 +22,13 @@ class ReminderWindow {
     this.onAction = callback;
   }
 
+  updateConfig(newConfig) {
+    this.config = newConfig;
+    if (this.window && !this.window.isDestroyed()) {
+      this.positionWindow();
+    }
+  }
+
   showReminder(reminder, stackIndex) {
     if (!this.window) {
       this.createWindow();

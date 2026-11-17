@@ -10,6 +10,7 @@ class AppTray {
     this.onAddReminder = null;
     this.onManageReminders = null;
     this.onOpenSounds = null;
+    this.onOpenSettings = null;
   }
 
   create() {
@@ -79,6 +80,15 @@ class AppTray {
       click: () => {
         if (this.onOpenSounds) {
           this.onOpenSounds();
+        }
+      },
+    });
+
+    items.push({
+      label: 'Settings',
+      click: () => {
+        if (this.onOpenSettings) {
+          this.onOpenSettings();
         }
       },
     });

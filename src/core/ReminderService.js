@@ -257,6 +257,34 @@ class ReminderService {
         pending: this.deferredReminders.has(r.id) && !this.shownReminders.has(r.id),
       }));
   }
+
+  updateSettings(newSettings) {
+    this.config.ffplayPath = newSettings.ffplayPath;
+    this.config.autoSnoozeTimeout = newSettings.autoSnoozeTimeout;
+    this.config.snoozeInterval = newSettings.snoozeInterval;
+    this.config.blockWhenFocused = newSettings.blockWhenFocused;
+    this.config.window = { ...newSettings.window };
+
+    if (this.audioPlayer && typeof this.audioPlayer.setFfplayPath === 'function') {
+      this.audioPlayer.setFfplayPath(this.config.ffplayPath);
+    }
+
+    if (this.reminderWindow && typeof this.reminderWindow.updateConfig === 'function') {
+      this.reminderWindow.updateConfig(this.config);
+    }
+
+    if (this.focusGuard) {
+      const needsGuard = this.config.reminders.some(
+        (reminder) => this.#getBlockApps(reminder).length > 0
+      );
+      if (needsGuard) {
+        this.focusGuard.start();
+      } else if (typeof this.focusGuard.stop === 'function') {
+        this.focusGuard.stop();
+      }
+      this.releaseDeferredReminders();
+    }
+  }
 }
 
 module.exports = ReminderService;

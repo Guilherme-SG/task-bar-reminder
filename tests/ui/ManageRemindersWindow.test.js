@@ -52,6 +52,10 @@ describe('ManageRemindersWindow', () => {
       expect(ipcMain.removeHandler).toHaveBeenCalledWith('get-reminders');
       expect(ipcMain.removeHandler).toHaveBeenCalledWith('get-available-processes');
       expect(ipcMain.removeHandler).toHaveBeenCalledWith('browse-exe-file');
+      expect(ipcMain.removeHandler).toHaveBeenCalledWith('get-settings');
+      expect(ipcMain.removeHandler).toHaveBeenCalledWith('save-settings');
+      expect(ipcMain.removeHandler).toHaveBeenCalledWith('reset-settings');
+      expect(ipcMain.removeHandler).toHaveBeenCalledWith('browse-ffplay-file');
       expect(ipcMain.removeAllListeners).toHaveBeenCalledWith('open-sounds-folder');
       expect(ipcMain.removeAllListeners).toHaveBeenCalledWith('close-manage-reminders');
     });
@@ -172,6 +176,75 @@ describe('ManageRemindersWindow', () => {
 
       expect(manageWindow.window.hide).toHaveBeenCalled();
     });
+
+    it('handles get-settings without and with onGetSettings @spec:AC-005', async () => {
+      const handler = ipcMain.handle.mock.calls.find((c) => c[0] === 'get-settings')[1];
+
+      expect(await handler()).toBeNull();
+
+      const mockSettings = { snoozeInterval: 300, window: { width: 320, height: 220, defaultColor: '#1a1a2e' } };
+      manageWindow.setOnGetSettings(() => mockSettings);
+      expect(await handler()).toEqual(mockSettings);
+    });
+
+    it('handles save-settings without handler, on success, and on error @spec:AC-005', async () => {
+      const handler = ipcMain.handle.mock.calls.find((c) => c[0] === 'save-settings')[1];
+
+      const res1 = await handler({}, { snoozeInterval: 120 });
+      expect(res1).toEqual({ success: false, error: 'No save settings handler configured' });
+
+      const savedSettings = { snoozeInterval: 120 };
+      const mockSaveSettings = jest.fn().mockResolvedValue(savedSettings);
+      manageWindow.setOnSaveSettings(mockSaveSettings);
+      const res2 = await handler({}, { snoozeInterval: 120 });
+      expect(mockSaveSettings).toHaveBeenCalledWith({ snoozeInterval: 120 });
+      expect(res2).toEqual({ success: true, settings: savedSettings });
+
+      manageWindow.setOnSaveSettings(jest.fn().mockRejectedValue(new Error('Invalid settings')));
+      const res3 = await handler({}, { snoozeInterval: -1 });
+      expect(res3).toEqual({ success: false, error: 'Invalid settings' });
+    });
+
+    it('handles reset-settings without handler, on success, and on error @spec:AC-005', async () => {
+      const handler = ipcMain.handle.mock.calls.find((c) => c[0] === 'reset-settings')[1];
+
+      const res1 = await handler();
+      expect(res1).toEqual({ success: false, error: 'No reset settings handler configured' });
+
+      const defaultSettings = { snoozeInterval: 300 };
+      const mockResetSettings = jest.fn().mockResolvedValue(defaultSettings);
+      manageWindow.setOnResetSettings(mockResetSettings);
+      const res2 = await handler();
+      expect(mockResetSettings).toHaveBeenCalled();
+      expect(res2).toEqual({ success: true, settings: defaultSettings });
+
+      manageWindow.setOnResetSettings(jest.fn().mockRejectedValue(new Error('Reset failed')));
+      const res3 = await handler();
+      expect(res3).toEqual({ success: false, error: 'Reset failed' });
+    });
+
+    it('handles browse-ffplay-file when selected and when canceled @spec:AC-005', async () => {
+      const handler = ipcMain.handle.mock.calls.find((c) => c[0] === 'browse-ffplay-file')[1];
+
+      dialog.showOpenDialog.mockResolvedValueOnce({
+        canceled: false,
+        filePaths: ['C:\\ffmpeg\\bin\\ffplay.exe'],
+      });
+      const res1 = await handler();
+      expect(dialog.showOpenDialog).toHaveBeenCalledWith({
+        title: 'Select ffplay Executable',
+        properties: ['openFile'],
+        filters: [{ name: 'Executable files', extensions: ['exe'] }],
+      });
+      expect(res1).toBe('C:\\ffmpeg\\bin\\ffplay.exe');
+
+      dialog.showOpenDialog.mockResolvedValueOnce({
+        canceled: true,
+        filePaths: [],
+      });
+      const res2 = await handler();
+      expect(res2).toBeNull();
+    });
   });
 
   describe('show and window lifecycle', () => {
@@ -185,6 +258,15 @@ describe('ManageRemindersWindow', () => {
       expect(manageWindow.window.webContents.send).toHaveBeenCalledWith('init-view', {
         mode: 'edit',
         reminderId: 'water',
+      });
+    });
+
+    it('sends init-view with settings mode when show("settings") is called @spec:AC-004', () => {
+      manageWindow.show('settings');
+
+      expect(manageWindow.window.webContents.send).toHaveBeenCalledWith('init-view', {
+        mode: 'settings',
+        reminderId: null,
       });
     });
 

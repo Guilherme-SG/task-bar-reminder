@@ -15,6 +15,16 @@ const DEFAULTS = {
 };
 
 class ConfigLoader {
+  static getDefaults() {
+    return {
+      ffplayPath: DEFAULTS.ffplayPath,
+      autoSnoozeTimeout: DEFAULTS.autoSnoozeTimeout,
+      snoozeInterval: DEFAULTS.snoozeInterval,
+      blockWhenFocused: [...DEFAULTS.blockWhenFocused],
+      window: { ...DEFAULTS.window },
+    };
+  }
+
   static load() {
     const raw = ConfigLoader.#readFile();
     const config = ConfigLoader.#applyDefaults(raw);
@@ -23,26 +33,122 @@ class ConfigLoader {
     return config;
   }
 
-  static #readFile() {
-    if (!fs.existsSync(CONFIG_PATH)) {
-      throw new Error(`Config file not found: ${CONFIG_PATH}`);
+  static getSettings(filePath = CONFIG_PATH) {
+    const raw = ConfigLoader.#readFile(filePath);
+    const merged = ConfigLoader.#applyDefaults(raw);
+    return {
+      ffplayPath: merged.ffplayPath,
+      autoSnoozeTimeout: merged.autoSnoozeTimeout,
+      snoozeInterval: merged.snoozeInterval,
+      blockWhenFocused: [...merged.blockWhenFocused],
+      window: { ...merged.window },
+      defaults: ConfigLoader.getDefaults(),
+    };
+  }
+
+  static saveSettings(newSettings, filePath = CONFIG_PATH) {
+    const raw = ConfigLoader.#readFile(filePath);
+    const hasInvalidWindow =
+      newSettings.window !== undefined &&
+      (!newSettings.window || typeof newSettings.window !== 'object' || Array.isArray(newSettings.window));
+    const mergedWindow = hasInvalidWindow
+      ? newSettings.window
+      : { ...DEFAULTS.window, ...raw.window, ...newSettings.window };
+
+    const merged = {
+      ...DEFAULTS,
+      ...raw,
+      ...newSettings,
+      window: mergedWindow,
+    };
+
+    if (newSettings.blockWhenFocused !== undefined) {
+      merged.blockWhenFocused = ConfigLoader.#normalizeStringList(newSettings.blockWhenFocused);
     }
 
-    const content = fs.readFileSync(CONFIG_PATH, 'utf8');
+    ConfigLoader.validateSettings(merged);
+
+    const toWrite = {
+      ffplayPath: merged.ffplayPath,
+      autoSnoozeTimeout: merged.autoSnoozeTimeout,
+      snoozeInterval: merged.snoozeInterval,
+      blockWhenFocused: merged.blockWhenFocused,
+      window: merged.window,
+      reminders: raw.reminders || [],
+    };
+    fs.writeFileSync(filePath, JSON.stringify(toWrite, null, 2), 'utf8');
+
+    return {
+      ffplayPath: merged.ffplayPath,
+      autoSnoozeTimeout: merged.autoSnoozeTimeout * SECONDS_TO_MS,
+      snoozeInterval: merged.snoozeInterval * SECONDS_TO_MS,
+      blockWhenFocused: [...merged.blockWhenFocused],
+      window: { ...merged.window },
+    };
+  }
+
+  static resetSettings(filePath = CONFIG_PATH) {
+    return ConfigLoader.saveSettings(ConfigLoader.getDefaults(), filePath);
+  }
+
+  static #readFile(filePath = CONFIG_PATH) {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Config file not found: ${filePath}`);
+    }
+
+    const content = fs.readFileSync(filePath, 'utf8');
 
     try {
       return JSON.parse(content);
     } catch {
-      throw new Error(`Invalid JSON in config file: ${CONFIG_PATH}`);
+      throw new Error(`Invalid JSON in config file: ${filePath}`);
     }
   }
 
   static #applyDefaults(raw) {
+    const hasInvalidWindow =
+      raw.window !== undefined &&
+      (!raw.window || typeof raw.window !== 'object' || Array.isArray(raw.window));
+
     return {
       ...DEFAULTS,
       ...raw,
-      window: { ...DEFAULTS.window, ...raw.window },
+      window: hasInvalidWindow ? raw.window : { ...DEFAULTS.window, ...raw.window },
     };
+  }
+
+  static validateSettings(settings) {
+    if (typeof settings.ffplayPath !== 'string') {
+      throw new Error('"ffplayPath" must be a string');
+    }
+
+    if (typeof settings.autoSnoozeTimeout !== 'number' || Number.isNaN(settings.autoSnoozeTimeout) || settings.autoSnoozeTimeout < 0) {
+      throw new Error('"autoSnoozeTimeout" must be a non-negative number');
+    }
+
+    if (typeof settings.snoozeInterval !== 'number' || Number.isNaN(settings.snoozeInterval) || settings.snoozeInterval < 0) {
+      throw new Error('"snoozeInterval" must be a non-negative number');
+    }
+
+    if (!ConfigLoader.#isStringList(settings.blockWhenFocused)) {
+      throw new Error('"blockWhenFocused" must be an array of non-empty strings');
+    }
+
+    if (!settings.window || typeof settings.window !== 'object' || Array.isArray(settings.window)) {
+      throw new Error('"window" must be an object');
+    }
+
+    if (typeof settings.window.width !== 'number' || Number.isNaN(settings.window.width) || settings.window.width < 200) {
+      throw new Error('"window.width" must be a number >= 200');
+    }
+
+    if (typeof settings.window.height !== 'number' || Number.isNaN(settings.window.height) || settings.window.height < 120) {
+      throw new Error('"window.height" must be a number >= 120');
+    }
+
+    if (settings.window.defaultColor !== undefined && !ConfigLoader.#isValidHex(settings.window.defaultColor)) {
+      throw new Error(`Invalid window.defaultColor: "${settings.window.defaultColor}"`);
+    }
   }
 
   static #validate(config) {
@@ -57,21 +163,7 @@ class ConfigLoader {
       ids.add(reminder.id);
     }
 
-    if (config.window.defaultColor !== undefined && !ConfigLoader.#isValidHex(config.window.defaultColor)) {
-      throw new Error(`Invalid window.defaultColor: "${config.window.defaultColor}"`);
-    }
-
-    if (typeof config.autoSnoozeTimeout !== 'number' || config.autoSnoozeTimeout < 0) {
-      throw new Error('"autoSnoozeTimeout" must be a non-negative number');
-    }
-
-    if (typeof config.snoozeInterval !== 'number' || config.snoozeInterval < 0) {
-      throw new Error('"snoozeInterval" must be a non-negative number');
-    }
-
-    if (!ConfigLoader.#isStringList(config.blockWhenFocused)) {
-      throw new Error('"blockWhenFocused" must be an array of non-empty strings');
-    }
+    ConfigLoader.validateSettings(config);
   }
 
   static validateReminder(reminder, existingIds = new Set()) {
@@ -120,17 +212,25 @@ class ConfigLoader {
     }
   }
 
-  static #normalizeReminder(rawReminder) {
-    const reminder = { ...rawReminder };
-    if (typeof reminder.blockWhenFocused === 'string') {
-      reminder.blockWhenFocused = reminder.blockWhenFocused
+  static #normalizeStringList(value) {
+    if (typeof value === 'string') {
+      return value
         .split(',')
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
     }
+    return value;
+  }
+
+  static #normalizeReminder(rawReminder) {
+    const reminder = { ...rawReminder };
+    if (reminder.blockWhenFocused !== undefined) {
+      reminder.blockWhenFocused = ConfigLoader.#normalizeStringList(reminder.blockWhenFocused);
+    }
 
     if (reminder.description === '') delete reminder.description;
-    if (reminder.color === '') delete reminder.color;
+    if (reminder.color === '' || reminder.color === null) delete reminder.color;
+    if (reminder.blockWhenFocused === null) delete reminder.blockWhenFocused;
     if (reminder.snoozeInterval === '' || reminder.snoozeInterval === null) {
       delete reminder.snoozeInterval;
     }
@@ -153,17 +253,7 @@ class ConfigLoader {
   }
 
   static saveReminder(newReminder, filePath = CONFIG_PATH) {
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`Config file not found: ${filePath}`);
-    }
-
-    let raw;
-    try {
-      const content = fs.readFileSync(filePath, 'utf8');
-      raw = JSON.parse(content);
-    } catch {
-      throw new Error(`Invalid JSON in config file: ${filePath}`);
-    }
+    const raw = ConfigLoader.#readFile(filePath);
 
     if (!raw.reminders || !Array.isArray(raw.reminders)) {
       raw.reminders = [];
@@ -181,17 +271,7 @@ class ConfigLoader {
   }
 
   static updateReminder(id, updatedData, filePath = CONFIG_PATH) {
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`Config file not found: ${filePath}`);
-    }
-
-    let raw;
-    try {
-      const content = fs.readFileSync(filePath, 'utf8');
-      raw = JSON.parse(content);
-    } catch {
-      throw new Error(`Invalid JSON in config file: ${filePath}`);
-    }
+    const raw = ConfigLoader.#readFile(filePath);
 
     if (!raw.reminders || !Array.isArray(raw.reminders)) {
       throw new Error(`Reminder with id "${id}" not found`);
@@ -218,17 +298,7 @@ class ConfigLoader {
   }
 
   static deleteReminder(id, filePath = CONFIG_PATH) {
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`Config file not found: ${filePath}`);
-    }
-
-    let raw;
-    try {
-      const content = fs.readFileSync(filePath, 'utf8');
-      raw = JSON.parse(content);
-    } catch {
-      throw new Error(`Invalid JSON in config file: ${filePath}`);
-    }
+    const raw = ConfigLoader.#readFile(filePath);
 
     if (!raw.reminders || !Array.isArray(raw.reminders)) {
       throw new Error(`Reminder with id "${id}" not found`);
